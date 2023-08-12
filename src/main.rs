@@ -5,23 +5,28 @@ use axum::{
     Json, Router,
 };
 use error::AxumHelloError;
-use log;
+
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, net::SocketAddr};
+use tower_http::trace::TraceLayer;
 
+mod config;
+mod config_env;
 mod error;
 
 #[tokio::main]
 async fn main() {
-    // initialize tracing
-    tracing_subscriber::fmt::init();
+    let config = config::Config::new();
+    config::Config::init_otel();
+    // let client = config::Config::init_mongo::<User>();
 
-    // build our application with a route
+    // Display configured settings
+    config.print_values(log::Level::Info);
+
     let app = Router::new()
-        // `GET /` goes to `root`
         .route("/", get(root))
-        // Break out nested api routes into new router.
-        .nest("/api", api_router());
+        .nest("/api", api_router())
+        .layer(TraceLayer::new_for_http());
 
     // run our app with hyper, listening globally on port 3000
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -32,14 +37,14 @@ async fn main() {
 
 // basic handler that responds with a static string
 async fn root() -> &'static str {
+    tracing::info!("running root");
     "Hello, World!"
 }
 
 fn api_router() -> Router {
-    let users_api = Router::new()
+    Router::new()
         .route("/users", post(create_user))
-        .route("/users/:id", get(get_user));
-    users_api
+        .route("/users/:id", get(get_user))
 }
 
 async fn create_user(
