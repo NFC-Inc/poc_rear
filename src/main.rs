@@ -24,7 +24,6 @@ async fn main() {
     config.print_values(log::Level::Info);
 
     let app = Router::new()
-        .route("/", get(root))
         .nest("/api", api_router())
         .layer(TraceLayer::new_for_http());
 
@@ -33,12 +32,6 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     log::debug!("listening on {}", addr);
     axum::serve(listener, app).await.unwrap();
-}
-
-// basic handler that responds with a static string
-async fn root() -> &'static str {
-    tracing::info!("running root");
-    "Hello, World!"
 }
 
 fn api_router() -> Router {
