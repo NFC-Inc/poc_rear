@@ -1,0 +1,42 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+
+exporters:
+  logging:
+    loglevel: debug
+    
+  # jaeger:
+  #   endpoint: jaeger-all-in-one:14250
+  #   tls:
+  #     insecure: true
+      
+# If you have a honeycomb api key you can use this exporter. (add `otelp` to the exporters array below)
+  otlp:
+   endpoint: "api.honeycomb.io:443"
+   headers:
+     "x-honeycomb-team": ${env:HONEYCOMB_API_KEY} 
+
+processors:
+  batch:
+
+extensions:
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, otlp] # add exporters to this array to enable them
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]
