@@ -1,4 +1,5 @@
 use dotenv::dotenv;
+use mongodb::options::ClientOptions;
 use tracing::metadata::LevelFilter;
 
 use std::net::Ipv4Addr;
@@ -31,10 +32,12 @@ impl Config {
     pub const DEFAULT_SERVICE_IP: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
     pub const DEFAULT_OTEL_URL: &str = "https://localhost:4317";
     pub const DEFAULT_LOG_FILTER: &str = "INFO";
-    pub const DEFAULT_TRACE_FILTER: &str = "DEBUG";
+    pub const DEFAULT_TRACE_FILTER: &str =
+        "rust_axum=debug,axum=debug,tower_http=debug,mongodb=debug";
 
     pub const MONGO_DB_NAME: &str = Config::APP_NAME;
-    pub const MONGO_COLL_NAME: &str = "users";
+    pub const MONGO_COLL_NAME_WOTD: &str = "wotd";
+    pub const MONGO_COLL_NAME_USER: &str = "user";
 
     pub fn new() -> Config {
         Config {
@@ -124,13 +127,13 @@ impl Config {
             .unique(true)
             .build();
         let model = mongodb::IndexModel::builder()
-            .keys(mongodb::bson::doc! { "username": 1 })
+            .keys(mongodb::bson::doc! { "word": 1 })
             .options(options)
             .build();
 
         client
             .database(Config::MONGO_DB_NAME)
-            .collection::<T>(Config::MONGO_COLL_NAME)
+            .collection::<T>(Config::MONGO_COLL_NAME_WOTD)
             .create_index(model, None)
             .await
             .expect("creating an index should succeed");

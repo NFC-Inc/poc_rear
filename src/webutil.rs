@@ -25,3 +25,10 @@ pub async fn healthcheck_liveness() -> (StatusCode, Json<Response>) {
     };
     (StatusCode::OK, Json(response))
 }
+
+pub async fn not_found() -> (StatusCode, Json<Response>) {
+    let response = Response {
+        message: "Resource not found".to_string(),
+    };
+    (StatusCode::NOT_FOUND, Json(response))
+}
