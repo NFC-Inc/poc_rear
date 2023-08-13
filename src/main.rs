@@ -1,18 +1,12 @@
-use axum::{
-    extract::Path,
-    http::StatusCode,
-    routing::{get, post},
-    Json, Router,
-};
-use error::AxumHelloError;
-
-use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, net::SocketAddr};
+use axum::Router;
+use std::net::SocketAddr;
 use tower_http::trace::TraceLayer;
 
+mod api_routes;
 mod config;
 mod config_env;
 mod error;
+mod webutil;
 
 #[tokio::main]
 async fn main() {
@@ -20,79 +14,16 @@ async fn main() {
     config::Config::init_otel();
     // let client = config::Config::init_mongo::<User>();
 
-    // Display configured settings
-    config.print_values(log::Level::Info);
+    config.log_config_values(log::Level::Info);
 
     let app = Router::new()
-        .nest("/api", api_router())
+        .nest("/api", api_routes::api_router())
+        .nest("/health", webutil::health_router())
         .layer(TraceLayer::new_for_http());
 
     let addr = SocketAddr::from((config.service_ip(), config.service_port()));
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    log::debug!("listening on {}", addr);
-    axum::serve(listener, app).await.unwrap();
-}
-
-fn api_router() -> Router {
-    Router::new()
-        .route("/users", post(create_user))
-        .route("/users/:id", get(get_user))
-}
-
-async fn create_user(
-    // this argument tells axum to parse the request body
-    // as JSON into a `CreateUser` type
-    Json(payload): Json<CreateUser>,
-) -> (StatusCode, Json<User>) {
-    tracing::info!("created a default user!");
-    let user = User {
-        id: 1337,
-        username: payload.username,
-    };
-
-    // this will be converted into a JSON response
-    // with a status code of `201 Created`
-    (StatusCode::CREATED, Json(user))
-}
-
-async fn get_user(
-    Path(params): Path<HashMap<String, String>>,
-) -> Result<Json<User>, AxumHelloError> {
-    // insert your application logic here
-    let id = params.get("id");
-    match id {
-        Some(i) => match i.parse::<u64>() {
-            Ok(id) => {
-                let user = User {
-                    id,
-                    username: "defaulted".to_string(),
-                };
-                tracing::info!("found default user!");
-                Ok(Json(user))
-            }
-            Err(e) => {
-                tracing::error!("error finding user with id: {:#?}!", id);
-                Err(AxumHelloError::BadRequest(format!(
-                    "failed when parsing id: {}",
-                    e
-                )))
-            }
-        },
-        None => Err(AxumHelloError::BadRequest(
-            "Missing ':id' in path params".to_string(),
-        )),
-    }
-}
-
-// the input to our `create_user` handler
-#[derive(Deserialize)]
-struct CreateUser {
-    username: String,
-}
-
-// the output to our `create_user` handler
-#[derive(Serialize)]
-struct User {
-    id: u64,
-    username: String,
+    log::info!("listening on {}", addr);
+    axum::serve(tokio::net::TcpListener::bind(addr).await.unwrap(), app)
+        .await
+        .unwrap();
 }
