@@ -24,21 +24,13 @@ async fn main() {
     config.print_values(log::Level::Info);
 
     let app = Router::new()
-        .route("/", get(root))
         .nest("/api", api_router())
         .layer(TraceLayer::new_for_http());
 
-    // run our app with hyper, listening globally on port 3000
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from((config.service_ip(), config.service_port()));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     log::debug!("listening on {}", addr);
     axum::serve(listener, app).await.unwrap();
-}
-
-// basic handler that responds with a static string
-async fn root() -> &'static str {
-    tracing::info!("running root");
-    "Hello, World!"
 }
 
 fn api_router() -> Router {
@@ -52,7 +44,7 @@ async fn create_user(
     // as JSON into a `CreateUser` type
     Json(payload): Json<CreateUser>,
 ) -> (StatusCode, Json<User>) {
-    // insert your application logic here
+    tracing::info!("created a default user!");
     let user = User {
         id: 1337,
         username: payload.username,
@@ -67,19 +59,24 @@ async fn get_user(
     Path(params): Path<HashMap<String, String>>,
 ) -> Result<Json<User>, AxumHelloError> {
     // insert your application logic here
-    match params.get("id") {
+    let id = params.get("id");
+    match id {
         Some(i) => match i.parse::<u64>() {
             Ok(id) => {
                 let user = User {
                     id,
                     username: "defaulted".to_string(),
                 };
+                tracing::info!("found default user!");
                 Ok(Json(user))
             }
-            Err(e) => Err(AxumHelloError::BadRequest(format!(
-                "failed when parsing id: {}",
-                e
-            ))),
+            Err(e) => {
+                tracing::error!("error finding user with id: {:#?}!", id);
+                Err(AxumHelloError::BadRequest(format!(
+                    "failed when parsing id: {}",
+                    e
+                )))
+            }
         },
         None => Err(AxumHelloError::BadRequest(
             "Missing ':id' in path params".to_string(),
