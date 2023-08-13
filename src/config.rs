@@ -16,8 +16,8 @@ use crate::config_env::ConfigEnvKey;
 
 pub struct Config {
     using_dotenv_path: Option<PathBuf>,
-    actix_ip: Ipv4Addr,
-    actix_port: u16,
+    service_ip: Ipv4Addr,
+    service_port: u16,
     otel_url: String,
 }
 
@@ -27,8 +27,8 @@ impl Config {
     // pub const ANOTHER_KEY: Key = Key::from_static_str("ex.com/another");
 
     pub const APP_NAME: &str = "poc_rear";
-    pub const DEFAULT_ACTIX_PORT: u16 = 8080;
-    pub const DEFAULT_ACTIX_IP: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
+    pub const DEFAULT_SERVICE_PORT: u16 = 8080;
+    pub const DEFAULT_SERVICE_IP: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
     pub const DEFAULT_OTEL_URL: &str = "https://localhost:4317";
     pub const DEFAULT_LOG_FILTER: &str = "INFO";
     pub const DEFAULT_TRACE_FILTER: &str = "INFO";
@@ -39,8 +39,8 @@ impl Config {
     pub fn new() -> Config {
         Config {
             using_dotenv_path: dotenv().ok(),
-            actix_ip: Ipv4Addr::from(ConfigEnvKey::ActixIp),
-            actix_port: u16::from(ConfigEnvKey::ActixPort),
+            service_ip: Ipv4Addr::from(ConfigEnvKey::ServiceIp),
+            service_port: u16::from(ConfigEnvKey::ServicePort),
             otel_url: String::from(ConfigEnvKey::OtelCollectorUrl),
         }
     }
@@ -52,18 +52,18 @@ impl Config {
         log::log!(
             level,
             "Listening on        : [{}:{}]",
-            self.actix_ip(),
-            self.actix_port()
+            self.service_ip(),
+            self.service_port()
         );
         log::log!(level, "Sending traces to   : [{}]", self.otel_url());
     }
 
-    pub fn actix_ip(&self) -> Ipv4Addr {
-        self.actix_ip
+    pub fn service_ip(&self) -> Ipv4Addr {
+        self.service_ip
     }
 
-    pub fn actix_port(&self) -> u16 {
-        self.actix_port
+    pub fn service_port(&self) -> u16 {
+        self.service_port
     }
 
     pub fn otel_url(&self) -> String {
@@ -143,52 +143,52 @@ mod tests {
     #[test]
     fn test_u16_from_env_key_actix_port_default() {
         // Arrange
-        env::remove_var(ConfigEnvKey::ActixPort.as_str());
+        env::remove_var(ConfigEnvKey::ServicePort.as_str());
 
         // Act / Assert
         assert_eq!(
-            Config::DEFAULT_ACTIX_PORT,
-            u16::from(ConfigEnvKey::ActixPort)
+            Config::DEFAULT_SERVICE_PORT,
+            u16::from(ConfigEnvKey::ServicePort)
         );
     }
 
     #[test]
     fn test_u16_from_env_key_actix_port_non_default() {
         // Arrange
-        env::set_var(ConfigEnvKey::ActixPort.as_str(), "1337");
+        env::set_var(ConfigEnvKey::ServicePort.as_str(), "1337");
 
         // Act / Assert
-        assert_eq!(1337, u16::from(ConfigEnvKey::ActixPort));
+        assert_eq!(1337, u16::from(ConfigEnvKey::ServicePort));
 
         // Cleanup
-        env::remove_var(ConfigEnvKey::ActixPort.as_str())
+        env::remove_var(ConfigEnvKey::ServicePort.as_str())
     }
 
     #[test]
     fn test_ipv4_from_env_key_actix_ip_default() {
         // Arrange
-        env::remove_var(ConfigEnvKey::ActixIp.as_str());
+        env::remove_var(ConfigEnvKey::ServiceIp.as_str());
 
         // Act / Assert
         assert_eq!(
-            Config::DEFAULT_ACTIX_IP,
-            Ipv4Addr::from(ConfigEnvKey::ActixIp)
+            Config::DEFAULT_SERVICE_IP,
+            Ipv4Addr::from(ConfigEnvKey::ServiceIp)
         );
     }
 
     #[test]
     fn test_ipv4_from_env_key_actix_ip_non_default() {
         // Arrange
-        env::set_var(ConfigEnvKey::ActixIp.as_str(), "127.0.0.1");
+        env::set_var(ConfigEnvKey::ServiceIp.as_str(), "127.0.0.1");
 
         // Act / Assert
         assert_eq!(
             Ipv4Addr::new(127, 0, 0, 1),
-            Ipv4Addr::from(ConfigEnvKey::ActixIp)
+            Ipv4Addr::from(ConfigEnvKey::ServiceIp)
         );
 
         // Cleanup
-        env::remove_var(ConfigEnvKey::ActixIp.as_str())
+        env::remove_var(ConfigEnvKey::ServiceIp.as_str())
     }
 
     #[test]
@@ -224,8 +224,8 @@ mod tests {
         let new_config = Config::new();
 
         // Assert
-        assert_eq!(Config::DEFAULT_ACTIX_IP, new_config.actix_ip());
-        assert_eq!(Config::DEFAULT_ACTIX_PORT, new_config.actix_port());
+        assert_eq!(Config::DEFAULT_SERVICE_IP, new_config.service_ip());
+        assert_eq!(Config::DEFAULT_SERVICE_PORT, new_config.service_port());
         assert_eq!(Config::DEFAULT_OTEL_URL, new_config.otel_url());
     }
 }
