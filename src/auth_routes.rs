@@ -19,7 +19,7 @@ pub async fn user_login(user_form: Form<UserLogin>) -> Result<Response, StatusCo
             .header("Location", "/")
             .header(
                 "Set-Cookie",
-                format!("access_token={}; Max-Age=999999", "testing.testing.testing"),
+                format!("access_token={}; SameSite=Strict; Secure; HttpOnly; Max-Age=999999", "testing.testing.testing"),
             )
             .body(http_body::Empty::new())
             .unwrap()
