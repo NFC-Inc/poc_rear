@@ -10,6 +10,7 @@ use tokio_stream::StreamExt;
 
 use crate::{
     config::Config,
+    user_models::User,
     wotd_models::{CreateWotdDto, DisplayWotdDto},
 };
 
@@ -20,7 +21,13 @@ pub fn wotd_router() -> Router {
         .route("/wotd", get(get_wotd))
 }
 
-async fn get_one_wotd(client: Extension<std::sync::Arc<Client>>, word: Path<String>) -> Response {
+async fn get_one_wotd(
+    Extension(user): Extension<User>,
+    Extension(client): Extension<std::sync::Arc<Client>>,
+    word: Path<String>,
+) -> Response {
+    log::info!("authed user: {}", user.username);
+
     let collection: mongodb::Collection<DisplayWotdDto> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_WOTD);

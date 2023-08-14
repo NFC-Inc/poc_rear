@@ -14,8 +14,8 @@ use crate::{
 
 pub fn user_router() -> Router {
     Router::new()
-        .route("/users", post(create_user))
-        .route("/users/:username", get(get_user))
+        .route("/user", post(create_user))
+        .route("/user/:username", get(get_user))
 }
 
 async fn create_user(
@@ -26,6 +26,7 @@ async fn create_user(
 
     let user = CreateUser {
         username: create_user.username.clone(),
+        password: create_user.password.clone(),
     };
 
     let collection = client
