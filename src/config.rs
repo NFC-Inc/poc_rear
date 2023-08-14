@@ -40,6 +40,7 @@ impl Config {
     pub const MONGO_DB_NAME: &str = Config::APP_NAME;
     pub const MONGO_COLL_NAME_WOTD: &str = "wotd";
     pub const MONGO_COLL_NAME_USER: &str = "user";
+    pub const DEVELOPMENT: bool = true;
 
     pub fn new() -> Config {
         Config {

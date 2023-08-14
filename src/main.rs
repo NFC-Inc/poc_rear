@@ -1,4 +1,4 @@
-use auth_routes::{auth, user_auth, user_login, user_logout};
+use auth_routes::{auth, get_user_login, user_auth, user_login, user_logout};
 use axum::{
     middleware,
     routing::{get, post},
@@ -35,6 +35,7 @@ async fn main() {
         .route("/auth", get(user_auth))
         .route_layer(middleware::from_fn(auth))
         .route("/auth/login", post(user_login))
+        .route("/auth/login", get(get_user_login))
         .layer(Extension(client))
         .layer(TraceLayer::new_for_http())
         .nest("/health", webutil::health_router())
