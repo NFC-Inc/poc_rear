@@ -33,12 +33,9 @@ pub async fn user_login(
                 log::info!("matched user!");
                 return Ok(build_login_response(username));
             }
-
-            // User password did not match.
             return Err(StatusCode::BAD_REQUEST);
         }
         Ok(None) => {
-            // User was not found in the database.
             return Err(StatusCode::BAD_REQUEST);
         }
         Err(err) => {
@@ -74,8 +71,53 @@ fn build_login_response(username: String) -> Response {
         .into_response();
 }
 
-pub async fn user_logout() -> Result<Response, StatusCode> {
-    Err(StatusCode::NOT_IMPLEMENTED)
+fn build_logout_response() -> Response {
+    return Response::builder()
+        .status(StatusCode::OK)
+        .header(
+            "Set-Cookie",
+            format!(
+                "{}={}; Path=/; HttpOnly; SameSite=Strict; Max-Age=999999{}",
+                Config::AUTH_TOKEN_STRING,
+                "invalidated",
+                if !Config::DEVELOPMENT {
+                    "; Secure;"
+                } else {
+                    ""
+                }
+            ),
+        )
+        .body(http_body::Empty::new())
+        .unwrap()
+        .into_response();
+}
+
+pub async fn user_logout(
+    Extension(client): Extension<Arc<Client>>,
+    Extension(user): Extension<User>,
+) -> Result<Response, StatusCode> {
+    let user_collection: Collection<User> = client
+        .database(Config::MONGO_DB_NAME)
+        .collection(Config::MONGO_COLL_NAME_USER);
+    match user_collection
+        .find_one(doc! { "username": &user.username }, None)
+        .await
+    {
+        Ok(Some(_)) => {
+            return Ok(build_logout_response());
+        }
+        Ok(None) => {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+        Err(err) => {
+            // An error occurred while searching the database.
+            tracing::error!(
+                "an error occurred while searching for username ({}): {err}",
+                user.username
+            );
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    }
 }
 
 pub async fn user_auth() -> Result<Response, StatusCode> {
