@@ -6,16 +6,13 @@ use axum::{
     Extension, Form, Json, Router,
 };
 use mongodb::Client;
-
-use crate::{
-    config::Config,
-    user_models::{CreateUser, User},
-};
+use poc_rear_config_lib::config::Config;
+use poc_rear_user_lib::user_models::{CreateUser, User};
 
 pub fn user_router() -> Router {
     Router::new()
-        .route("/user", post(create_user))
-        .route("/user/:username", get(get_user))
+        .route("/", post(create_user))
+        .route("/:username", get(get_user))
 }
 
 async fn create_user(
@@ -58,18 +55,18 @@ async fn get_user(
         Ok(Some(user)) => {
             let id = user._id;
             tracing::info!("found user with id: {id}");
-            return (StatusCode::OK, Json(Some(user))).into_response();
+            (StatusCode::OK, Json(Some(user))).into_response()
         }
         Ok(None) => {
             tracing::warn!("no user found for: {}", username.to_string());
-            return StatusCode::NOT_FOUND.into_response();
+            StatusCode::NOT_FOUND.into_response()
         }
         Err(err) => {
             tracing::error!(
                 "server errored when trying to find: {}, {err}",
                 username.to_string()
             );
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
 }

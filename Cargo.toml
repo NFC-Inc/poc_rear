@@ -1,31 +1,9 @@
-[package]
-name = "poc_rear"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-axum = "0.6.20"
-tokio = { version = "1.28.2", features = ["full"] }
-
-opentelemetry = { version = "0.19.0", default-features = false, features = ["trace", "rt-tokio"] }
-opentelemetry-otlp = { version = "0.12.0", features = ["tonic"]}
-opentelemetry-semantic-conventions = "0.9.0"
-
-tracing = "0.1.37"
-tracing-bunyan-formatter = "0.3.3"
-tracing-opentelemetry = "0.19.0"
-tracing-subscriber = { version = "0.3.17", features = ["env-filter", "tracing-log"] }
-
-anyhow = "1.0.71"
-env_logger = "0.10.0"
-log = "0.4.19"
-serde = { version = "1.0.164", features = ["derive"] }
-serde_json = "1.0.99"
-mongodb = "2.5.0"
-dotenv = "0.15.0"
-tower-http = { version = "0.4.3", features = ["trace"] }
-tokio-stream = "0.1.14"
-http-body = "0.4.5"
-http = "0.2.9"
+members = [
+    "poc_rear_config_lib",
+    "poc_rear_user_lib",
+    "poc_rear_wotd_lib",
+    "poc_rear_api_lib",
+    "poc_rear_bin",
+]
