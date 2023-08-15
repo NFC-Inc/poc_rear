@@ -1,6 +1,6 @@
 use dotenv::dotenv;
-use mongodb::options::ClientOptions;
-use tracing::metadata::LevelFilter;
+use poc_rear_user_lib::user_models::User;
+use poc_rear_wotd_lib::wotd_models::DisplayWotdDto;
 
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
@@ -14,8 +14,6 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 use opentelemetry_otlp::WithExportConfig;
 
 use crate::config_env::ConfigEnvKey;
-use crate::user_models::User;
-use crate::wotd_models::DisplayWotdDto;
 
 pub struct Config {
     using_dotenv_path: Option<PathBuf>,

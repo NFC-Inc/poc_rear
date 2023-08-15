@@ -6,19 +6,16 @@ use axum::{
     Extension, Form, Json, Router,
 };
 use mongodb::{bson::oid::ObjectId, Client};
+use poc_rear_config_lib::config::Config;
+use poc_rear_user_lib::user_models::User;
+use poc_rear_wotd_lib::wotd_models::{CreateWotdDto, DisplayWotdDto};
 use tokio_stream::StreamExt;
-
-use crate::{
-    config::Config,
-    user_models::User,
-    wotd_models::{CreateWotdDto, DisplayWotdDto},
-};
 
 pub fn wotd_router() -> Router {
     Router::new()
-        .route("/wotd", post(create_wotd))
-        .route("/wotd/:word", get(get_one_wotd))
-        .route("/wotd", get(get_wotd))
+        .route("/", get(get_wotd))
+        .route("/", post(create_wotd))
+        .route("/:word", get(get_one_wotd))
 }
 
 async fn get_one_wotd(
@@ -36,17 +33,17 @@ async fn get_one_wotd(
         .await
     {
         Ok(Some(wotd)) => {
-            return (StatusCode::OK, Json(Some(wotd))).into_response();
+            (StatusCode::OK, Json(Some(wotd))).into_response()
         }
         Ok(None) => {
-            return StatusCode::NOT_FOUND.into_response();
+            StatusCode::NOT_FOUND.into_response()
         }
         Err(err) => {
             tracing::error!(
                 "server errored when trying to find: {}, {err}",
                 word_name.to_string()
             );
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
 }
@@ -65,15 +62,15 @@ async fn get_wotd(
                 match wotd {
                     Ok(w) => wotds.push(w),
                     Err(err) => {
-                        tracing::warn!("error occured during mongo currsor iteration: {err}")
+                        tracing::warn!("error occured during mongo cursor iteration: {err}")
                     }
                 }
             }
-            return (StatusCode::OK, Json(wotds)).into_response();
+            (StatusCode::OK, Json(wotds)).into_response()
         }
         Err(err) => {
             tracing::error!("server errored when trying to find wotds: {err}");
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
 }

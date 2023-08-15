@@ -1,4 +1,6 @@
 use anyhow::Result;
+use poc_rear_config_lib::config::Config;
+use poc_rear_user_lib::user_models::{User, UserLogin};
 use std::sync::Arc;
 
 use axum::{
@@ -8,11 +10,6 @@ use axum::{
     Extension, Form,
 };
 use mongodb::{bson::doc, Client, Collection};
-
-use crate::{
-    config::Config,
-    user_models::{User, UserLogin},
-};
 
 pub async fn user_login(
     Extension(client): Extension<Arc<Client>>,
@@ -33,25 +30,25 @@ pub async fn user_login(
                 log::info!("matched user!");
                 return Ok(build_login_response(username));
             }
-            return Err(StatusCode::BAD_REQUEST);
+            Err(StatusCode::BAD_REQUEST)
         }
         Ok(None) => {
-            return Err(StatusCode::BAD_REQUEST);
+            Err(StatusCode::BAD_REQUEST)
         }
         Err(err) => {
             // An error occurred while searching the database.
             tracing::error!("an error occurred while searching for username ({username}): {err}");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
 }
 
 pub async fn get_user_login() -> Result<Response, StatusCode> {
-    return Ok(build_login_response("temp_testing".to_string()));
+    Ok(build_login_response("temp_testing".to_string()))
 }
 
 fn build_login_response(username: String) -> Response {
-    return Response::builder()
+    Response::builder()
         .status(StatusCode::OK)
         .header(
             "Set-Cookie",
@@ -68,11 +65,11 @@ fn build_login_response(username: String) -> Response {
         )
         .body(http_body::Empty::new())
         .unwrap()
-        .into_response();
+        .into_response()
 }
 
 fn build_logout_response() -> Response {
-    return Response::builder()
+    Response::builder()
         .status(StatusCode::OK)
         .header(
             "Set-Cookie",
@@ -89,7 +86,7 @@ fn build_logout_response() -> Response {
         )
         .body(http_body::Empty::new())
         .unwrap()
-        .into_response();
+        .into_response()
 }
 
 pub async fn user_logout(
@@ -104,10 +101,10 @@ pub async fn user_logout(
         .await
     {
         Ok(Some(_)) => {
-            return Ok(build_logout_response());
+            Ok(build_logout_response())
         }
         Ok(None) => {
-            return Err(StatusCode::BAD_REQUEST);
+            Err(StatusCode::BAD_REQUEST)
         }
         Err(err) => {
             // An error occurred while searching the database.
@@ -115,7 +112,7 @@ pub async fn user_logout(
                 "an error occurred while searching for username ({}): {err}",
                 user.username
             );
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
 }
@@ -136,7 +133,7 @@ pub async fn auth<T>(
                 log::info!("found auth token: {cookie}");
                 let jwt_access_token =
                     cookie.replace(&format!("{}=", Config::AUTH_TOKEN_STRING), "");
-                let parts: Vec<&str> = jwt_access_token.split(".").collect();
+                let parts: Vec<&str> = jwt_access_token.split('.').collect();
                 let user_collection: Collection<User> = client
                     .database(Config::MONGO_DB_NAME)
                     .collection(Config::MONGO_COLL_NAME_USER);
