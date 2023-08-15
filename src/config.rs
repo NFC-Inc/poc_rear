@@ -41,6 +41,7 @@ impl Config {
     pub const MONGO_COLL_NAME_WOTD: &str = "wotd";
     pub const MONGO_COLL_NAME_USER: &str = "user";
     pub const DEVELOPMENT: bool = true;
+    pub const AUTH_TOKEN_STRING: &str = "access_token";
 
     pub fn new() -> Config {
         Config {

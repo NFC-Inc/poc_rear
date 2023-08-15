@@ -19,14 +19,12 @@ pub fn user_router() -> Router {
 }
 
 async fn create_user(
-    client: Extension<std::sync::Arc<Client>>,
-    user_form: Form<CreateUser>,
+    Extension(client): Extension<std::sync::Arc<Client>>,
+    Form(create_user_form): Form<CreateUser>,
 ) -> Response {
-    let create_user = user_form;
-
     let user = CreateUser {
-        username: create_user.username.clone(),
-        password: create_user.password.clone(),
+        username: create_user_form.username.clone(),
+        password: create_user_form.password.clone(),
     };
 
     let collection = client
@@ -41,7 +39,10 @@ async fn create_user(
     }
 }
 
-async fn get_user(client: Extension<std::sync::Arc<Client>>, username: Path<String>) -> Response {
+async fn get_user(
+    Extension(client): Extension<std::sync::Arc<Client>>,
+    Path(username): Path<String>,
+) -> Response {
     // insert your application logic here
     let collection: mongodb::Collection<User> = client
         .database(Config::MONGO_DB_NAME)

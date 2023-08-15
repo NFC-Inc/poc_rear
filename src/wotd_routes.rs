@@ -22,31 +22,23 @@ pub fn wotd_router() -> Router {
 }
 
 async fn get_one_wotd(
-    Extension(user): Extension<User>,
+    Extension(_user): Extension<User>,
     Extension(client): Extension<std::sync::Arc<Client>>,
     word: Path<String>,
 ) -> Response {
-    log::info!("authed user: {}", user.username);
-
     let collection: mongodb::Collection<DisplayWotdDto> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_WOTD);
     let word_name = word.to_string();
-
-    log::info!("word: {word_name}");
 
     match collection
         .find_one(mongodb::bson::doc! { "word": &word_name }, None)
         .await
     {
         Ok(Some(wotd)) => {
-            let id = wotd._id;
-            tracing::info!("found wotd with id: {id}");
-            log::info!("word: {:#?}", wotd);
             return (StatusCode::OK, Json(Some(wotd))).into_response();
         }
         Ok(None) => {
-            tracing::warn!("no word found for: {}", word_name.to_string());
             return StatusCode::NOT_FOUND.into_response();
         }
         Err(err) => {
@@ -59,7 +51,10 @@ async fn get_one_wotd(
     }
 }
 
-async fn get_wotd(client: Extension<std::sync::Arc<Client>>) -> Response {
+async fn get_wotd(
+    Extension(_user): Extension<User>,
+    Extension(client): Extension<std::sync::Arc<Client>>,
+) -> Response {
     let collection: mongodb::Collection<DisplayWotdDto> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_WOTD);
@@ -84,10 +79,11 @@ async fn get_wotd(client: Extension<std::sync::Arc<Client>>) -> Response {
 }
 
 async fn create_wotd(
-    client: Extension<std::sync::Arc<Client>>,
-    word_form: Form<CreateWotdDto>,
+    Extension(_user): Extension<User>,
+    Extension(client): Extension<std::sync::Arc<Client>>,
+    Form(create_word_dto): Form<CreateWotdDto>,
 ) -> (StatusCode, String) {
-    let create_word = word_form;
+    let create_word = create_word_dto;
 
     let wotd = DisplayWotdDto {
         _id: ObjectId::new(),
