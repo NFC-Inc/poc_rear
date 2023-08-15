@@ -14,6 +14,8 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 use opentelemetry_otlp::WithExportConfig;
 
 use crate::config_env::ConfigEnvKey;
+use crate::user_models::User;
+use crate::wotd_models::DisplayWotdDto;
 
 pub struct Config {
     using_dotenv_path: Option<PathBuf>,
@@ -38,6 +40,8 @@ impl Config {
     pub const MONGO_DB_NAME: &str = Config::APP_NAME;
     pub const MONGO_COLL_NAME_WOTD: &str = "wotd";
     pub const MONGO_COLL_NAME_USER: &str = "user";
+    pub const DEVELOPMENT: bool = true;
+    pub const AUTH_TOKEN_STRING: &str = "access_token";
 
     pub fn new() -> Config {
         Config {
@@ -117,7 +121,7 @@ impl Config {
             .unwrap();
     }
 
-    pub async fn init_mongo<T>() -> mongodb::Client {
+    pub async fn init_mongo() -> mongodb::Client {
         let uri =
             std::env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".into());
         let client = mongodb::Client::with_uri_str(uri)
@@ -126,17 +130,30 @@ impl Config {
         let options = mongodb::options::IndexOptions::builder()
             .unique(true)
             .build();
-        let model = mongodb::IndexModel::builder()
+
+        let wotd_model = mongodb::IndexModel::builder()
             .keys(mongodb::bson::doc! { "word": 1 })
-            .options(options)
+            .options(options.clone())
             .build();
 
         client
             .database(Config::MONGO_DB_NAME)
-            .collection::<T>(Config::MONGO_COLL_NAME_WOTD)
-            .create_index(model, None)
+            .collection::<DisplayWotdDto>(Config::MONGO_COLL_NAME_WOTD)
+            .create_index(wotd_model, None)
             .await
             .expect("creating an index should succeed");
+
+        let user_model = mongodb::IndexModel::builder()
+            .keys(mongodb::bson::doc! { "username": 1 })
+            .options(options.clone())
+            .build();
+
+        client
+            .database(Config::MONGO_DB_NAME)
+            .collection::<User>(Config::MONGO_COLL_NAME_USER)
+            .create_index(user_model, None)
+            .await
+            .expect("creating database index for users should work");
 
         client
     }
