@@ -1,5 +1,5 @@
 use anyhow::Result;
-use poc_rear_config_lib::config::Config;
+use poc_rear_config_lib::{config::Config, config_env::ConfigEnvKey};
 use poc_rear_user_lib::user_models::{User, UserLogin};
 use std::sync::Arc;
 
@@ -54,7 +54,7 @@ fn build_login_response(username: String) -> Response {
                 "{}={}; Path=/; HttpOnly; SameSite=Strict; Max-Age=999999{}",
                 Config::AUTH_TOKEN_STRING,
                 format!("testing.{}.testing", username),
-                if !Config::DEVELOPMENT {
+                if !bool::from(ConfigEnvKey::DevMode) {
                     "; Secure;"
                 } else {
                     ""
@@ -75,7 +75,7 @@ fn build_logout_response() -> Response {
                 "{}={}; Path=/; HttpOnly; SameSite=Strict; Max-Age=999999{}",
                 Config::AUTH_TOKEN_STRING,
                 "invalidated",
-                if !Config::DEVELOPMENT {
+                if !bool::from(ConfigEnvKey::DevMode) {
                     "; Secure;"
                 } else {
                     ""
