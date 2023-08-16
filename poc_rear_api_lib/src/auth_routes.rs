@@ -27,14 +27,12 @@ pub async fn user_login(
     {
         Ok(Some(u)) => {
             if u.username == username && u.password == password {
-                log::info!("matched user!");
+                tracing::info!(u.username, "matched user!");
                 return Ok(build_login_response(username));
             }
             Err(StatusCode::BAD_REQUEST)
         }
-        Ok(None) => {
-            Err(StatusCode::BAD_REQUEST)
-        }
+        Ok(None) => Err(StatusCode::BAD_REQUEST),
         Err(err) => {
             // An error occurred while searching the database.
             tracing::error!("an error occurred while searching for username ({username}): {err}");
@@ -100,12 +98,8 @@ pub async fn user_logout(
         .find_one(doc! { "username": &user.username }, None)
         .await
     {
-        Ok(Some(_)) => {
-            Ok(build_logout_response())
-        }
-        Ok(None) => {
-            Err(StatusCode::BAD_REQUEST)
-        }
+        Ok(Some(_)) => Ok(build_logout_response()),
+        Ok(None) => Err(StatusCode::BAD_REQUEST),
         Err(err) => {
             // An error occurred while searching the database.
             tracing::error!(

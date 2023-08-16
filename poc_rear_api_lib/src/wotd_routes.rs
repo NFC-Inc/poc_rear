@@ -32,12 +32,8 @@ async fn get_one_wotd(
         .find_one(mongodb::bson::doc! { "word": &word_name }, None)
         .await
     {
-        Ok(Some(wotd)) => {
-            (StatusCode::OK, Json(Some(wotd))).into_response()
-        }
-        Ok(None) => {
-            StatusCode::NOT_FOUND.into_response()
-        }
+        Ok(Some(wotd)) => (StatusCode::OK, Json(Some(wotd))).into_response(),
+        Ok(None) => StatusCode::NOT_FOUND.into_response(),
         Err(err) => {
             tracing::error!(
                 "server errored when trying to find: {}, {err}",

@@ -1,6 +1,7 @@
 use dotenv::dotenv;
 use poc_rear_user_lib::user_models::User;
 use poc_rear_wotd_lib::wotd_models::DisplayWotdDto;
+use tracing::metadata::LevelFilter;
 
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
@@ -105,15 +106,15 @@ impl Config {
 
         tracing_subscriber::registry()
             .with(
-                tracing_subscriber::fmt::layer().with_filter(
-                    EnvFilter::try_from_default_env()
-                        .unwrap_or(EnvFilter::new(Config::DEFAULT_LOG_FILTER)),
-                ),
+                tracing_subscriber::fmt::layer()
+                    // This might need to be set only for local dev if logs need to be sent.
+                    .pretty()
+                    .with_filter(EnvFilter::from_default_env()),
             )
             .with(
                 tracing_opentelemetry::layer()
                     .with_tracer(tracer)
-                    .with_filter(EnvFilter::from_default_env()),
+                    .with_filter(LevelFilter::INFO),
             )
             .try_init()
             .unwrap();
