@@ -1,6 +1,6 @@
 use anyhow::Result;
 use poc_rear_config_lib::{config::Config, config_env::ConfigEnvKey};
-use poc_rear_user_lib::user_models::{User, UserLogin};
+use poc_rear_user_lib::user_models::{DtoUser, DtoUserLogin, UserModel};
 use std::sync::Arc;
 
 use axum::{
@@ -13,12 +13,12 @@ use mongodb::{bson::doc, Client, Collection};
 
 pub async fn user_login(
     Extension(client): Extension<Arc<Client>>,
-    Form(user_form): Form<UserLogin>,
+    Form(user_form): Form<DtoUserLogin>,
 ) -> Result<Response, StatusCode> {
     let username = user_form.username.clone();
     let password = user_form.password.clone();
 
-    let user_collection: Collection<User> = client
+    let user_collection: Collection<UserModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_USER);
     match user_collection
@@ -89,9 +89,9 @@ fn build_logout_response() -> Response {
 
 pub async fn user_logout(
     Extension(client): Extension<Arc<Client>>,
-    Extension(user): Extension<User>,
+    Extension(user): Extension<DtoUser>,
 ) -> Result<Response, StatusCode> {
-    let user_collection: Collection<User> = client
+    let user_collection: Collection<UserModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_USER);
     match user_collection
@@ -128,7 +128,7 @@ pub async fn auth<T>(
                 let jwt_access_token =
                     cookie.replace(&format!("{}=", Config::AUTH_TOKEN_STRING), "");
                 let parts: Vec<&str> = jwt_access_token.split('.').collect();
-                let user_collection: Collection<User> = client
+                let user_collection: Collection<UserModel> = client
                     .database(Config::MONGO_DB_NAME)
                     .collection(Config::MONGO_COLL_NAME_USER);
 
@@ -137,8 +137,9 @@ pub async fn auth<T>(
                     .await
                 {
                     Ok(Some(user)) => {
-                        log::info!("found user: {user:#?}");
-                        req.extensions_mut().insert(user);
+                        let dto_user = DtoUser::from(user);
+                        log::info!("found user: {dto_user:#?}");
+                        req.extensions_mut().insert(dto_user);
                         return Ok(next.run(req).await);
                     }
                     Ok(None) => {

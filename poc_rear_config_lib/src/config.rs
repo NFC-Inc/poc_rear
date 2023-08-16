@@ -1,6 +1,6 @@
 use dotenv::dotenv;
-use poc_rear_user_lib::user_models::User;
-use poc_rear_wotd_lib::wotd_models::DisplayWotdDto;
+use poc_rear_user_lib::user_models::UserModel;
+use poc_rear_wotd_lib::wotd_models::WotdModel;
 use tracing::metadata::LevelFilter;
 
 use std::net::Ipv4Addr;
@@ -119,6 +119,7 @@ impl Config {
     }
 
     pub async fn init_mongo() -> mongodb::Client {
+        // TODO: add way to timeout if mongo does not connect.
         let uri =
             std::env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".into());
         let client = mongodb::Client::with_uri_str(uri)
@@ -135,7 +136,7 @@ impl Config {
 
         client
             .database(Config::MONGO_DB_NAME)
-            .collection::<DisplayWotdDto>(Config::MONGO_COLL_NAME_WOTD)
+            .collection::<WotdModel>(Config::MONGO_COLL_NAME_WOTD)
             .create_index(wotd_model, None)
             .await
             .expect("creating an index should succeed");
@@ -147,7 +148,7 @@ impl Config {
 
         client
             .database(Config::MONGO_DB_NAME)
-            .collection::<User>(Config::MONGO_COLL_NAME_USER)
+            .collection::<UserModel>(Config::MONGO_COLL_NAME_USER)
             .create_index(user_model, None)
             .await
             .expect("creating database index for users should work");

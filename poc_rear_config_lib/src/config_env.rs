@@ -80,8 +80,9 @@ impl From<ConfigEnvKey> for u16 {
                 match env::var(ConfigEnvKey::ServicePort.as_str()) {
                     Ok(port) => port.parse::<u16>().unwrap_or_else(|_| {
                         panic!(
-                            "{} should be a valid u16! To use default port unset {} environment variable.",
+                            "{} should be a valid u16! {} is not valid. To use default port unset {} environment variable.",
                             ConfigEnvKey::ServicePort.as_str(),
+                            port,
                             ConfigEnvKey::ServicePort.as_str(),
                         )
                     }),
@@ -99,8 +100,9 @@ impl From<ConfigEnvKey> for Ipv4Addr {
             ConfigEnvKey::ServiceIp => {
                 match env::var(ConfigEnvKey::ServiceIp.as_str()) {
                     Ok(aip) => {
-                        aip.parse::<Ipv4Addr>().unwrap_or_else(|_| panic!("{} should be a valid Ipv4Addr! To use default ip unset {} environment variable.",
+                        aip.parse::<Ipv4Addr>().unwrap_or_else(|_| panic!("{} should be a valid Ipv4Addr! {} is not valid. To use default ip unset {} environment variable.",
                                 ConfigEnvKey::ServiceIp.as_str(),
+                                aip,
                                 ConfigEnvKey::ServiceIp.as_str()))
                     }
                     Err(_) => Config::DEFAULT_SERVICE_IP,
@@ -126,9 +128,13 @@ impl From<ConfigEnvKey> for bool {
     fn from(env_key: ConfigEnvKey) -> Self {
         match env_key {
             ConfigEnvKey::DevMode => match env::var(ConfigEnvKey::DevMode.as_str()) {
-                Ok(is_dev) => is_dev
-                    .parse::<bool>()
-                    .unwrap_or_else(|_| panic!("{} should be a valid bool!", is_dev)),
+                Ok(is_dev) => is_dev.parse::<bool>().unwrap_or_else(|_| {
+                    panic!(
+                        "{} should be a valid bool! {} is not valid.",
+                        ConfigEnvKey::DevMode.as_str(),
+                        is_dev
+                    )
+                }),
                 Err(_) => Config::DEFAULT_DEV_MODE,
             },
             _ => panic!("this key cannot be converted to bool. {DEFAULT_PANIC_MSG}"),
