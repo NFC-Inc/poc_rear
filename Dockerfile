@@ -16,6 +16,6 @@ WORKDIR /app
 
 COPY --from=builder /axum_poc_rear/target/x86_64-unknown-linux-musl/release/poc_rear ./
 
-ENV PORT=8080 SERVICE_IP=0.0.0.0
+ENV SERVICE_PORT=8080 SERVICE_IP=0.0.0.0
 
 CMD ["/app/poc_rear"]
