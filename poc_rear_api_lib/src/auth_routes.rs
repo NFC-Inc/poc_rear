@@ -20,7 +20,7 @@ pub async fn user_login(
 
     let user_collection: Collection<UserModel> = client
         .database(Config::MONGO_DB_NAME)
-        .collection(Config::MONGO_COLL_NAME_USER);
+        .collection(Config::MONGO_COLL_NAME_USERS);
     match user_collection
         .find_one(doc! { "username": &username }, None)
         .await
@@ -93,7 +93,7 @@ pub async fn user_logout(
 ) -> Result<Response, StatusCode> {
     let user_collection: Collection<UserModel> = client
         .database(Config::MONGO_DB_NAME)
-        .collection(Config::MONGO_COLL_NAME_USER);
+        .collection(Config::MONGO_COLL_NAME_USERS);
     match user_collection
         .find_one(doc! { "username": &user.username }, None)
         .await
@@ -130,7 +130,7 @@ pub async fn auth<T>(
                 let parts: Vec<&str> = jwt_access_token.split('.').collect();
                 let user_collection: Collection<UserModel> = client
                     .database(Config::MONGO_DB_NAME)
-                    .collection(Config::MONGO_COLL_NAME_USER);
+                    .collection(Config::MONGO_COLL_NAME_USERS);
 
                 match user_collection
                     .find_one(doc! {"username": parts.get(1)}, None)

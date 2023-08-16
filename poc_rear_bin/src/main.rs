@@ -18,14 +18,27 @@ async fn main() {
     config.log_config_values(log::Level::Info);
 
     let app = Router::new()
-        .route("/api/wotd", get(poc_rear_api_lib::wotd_routes::get_wotd))
+        // Get word of the day.
+        .route("/api/wotd", get(poc_rear_api_lib::word_routes::get_wotd))
         .route(
-            "/api/wotd",
-            post(poc_rear_api_lib::wotd_routes::create_wotd),
+            "/api/wotd/suggest",
+            post(poc_rear_api_lib::word_routes::suggest_new_wotd),
         )
         .route(
-            "/api/wotd/:word",
-            get(poc_rear_api_lib::wotd_routes::get_one_wotd),
+            "/api/wotd/update",
+            post(poc_rear_api_lib::word_routes::update_wotd),
+        )
+        // Get all words.
+        .route("/api/word", get(poc_rear_api_lib::word_routes::get_words))
+        // Get one word.
+        .route(
+            "/api/word/:word",
+            get(poc_rear_api_lib::word_routes::get_one_word),
+        )
+        // Create a word.
+        .route(
+            "/api/word",
+            post(poc_rear_api_lib::word_routes::create_word),
         )
         .route("/auth/logout", get(auth_routes::user_logout))
         .route("/auth", get(auth_routes::user_auth))

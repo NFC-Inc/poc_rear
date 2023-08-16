@@ -23,7 +23,7 @@ pub async fn create_user(
 
     let collection = client
         .database(Config::MONGO_DB_NAME)
-        .collection(Config::MONGO_COLL_NAME_USER);
+        .collection(Config::MONGO_COLL_NAME_USERS);
 
     let result = collection.insert_one(user, None).await;
 
@@ -40,7 +40,7 @@ pub async fn get_user(
     // insert your application logic here
     let collection: mongodb::Collection<UserModel> = client
         .database(Config::MONGO_DB_NAME)
-        .collection(Config::MONGO_COLL_NAME_USER);
+        .collection(Config::MONGO_COLL_NAME_USERS);
 
     match collection
         .find_one(

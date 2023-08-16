@@ -1,6 +1,7 @@
 use dotenv::dotenv;
 use poc_rear_user_lib::user_models::UserModel;
-use poc_rear_wotd_lib::wotd_models::WotdModel;
+use poc_rear_wotd_lib::word_models::WordModel;
+use poc_rear_wotd_lib::word_queue::QueueItemWordModel;
 use tracing::metadata::LevelFilter;
 
 use std::net::Ipv4Addr;
@@ -34,11 +35,12 @@ impl Config {
     pub const DEFAULT_OTEL_URL: &str = "https://localhost:4317";
     pub const DEFAULT_LOG_FILTER: &str = "INFO";
     pub const DEFAULT_DEV_MODE: bool = false;
+    pub const AUTH_TOKEN_STRING: &str = "access_token";
 
     pub const MONGO_DB_NAME: &str = Config::APP_NAME;
-    pub const MONGO_COLL_NAME_WOTD: &str = "wotd";
-    pub const MONGO_COLL_NAME_USER: &str = "user";
-    pub const AUTH_TOKEN_STRING: &str = "access_token";
+    pub const MONGO_COLL_NAME_WORDS: &str = "words";
+    pub const MONGO_COLL_NAME_USERS: &str = "users";
+    pub const MONGO_COLL_NAME_QUEUE_WORDS: &str = "queue_words";
 
     pub fn new() -> Config {
         Config {
@@ -133,11 +135,21 @@ impl Config {
             .keys(mongodb::bson::doc! { "word": 1 })
             .options(options.clone())
             .build();
-
         client
             .database(Config::MONGO_DB_NAME)
-            .collection::<WotdModel>(Config::MONGO_COLL_NAME_WOTD)
+            .collection::<WordModel>(Config::MONGO_COLL_NAME_WORDS)
             .create_index(wotd_model, None)
+            .await
+            .expect("creating an index should succeed");
+
+        let word_queue_model = mongodb::IndexModel::builder()
+            .keys(mongodb::bson::doc! { "word.word": 1 })
+            .options(options.clone())
+            .build();
+        client
+            .database(Config::MONGO_DB_NAME)
+            .collection::<QueueItemWordModel>(Config::MONGO_COLL_NAME_QUEUE_WORDS)
+            .create_index(word_queue_model, None)
             .await
             .expect("creating an index should succeed");
 
@@ -148,7 +160,7 @@ impl Config {
 
         client
             .database(Config::MONGO_DB_NAME)
-            .collection::<UserModel>(Config::MONGO_COLL_NAME_USER)
+            .collection::<UserModel>(Config::MONGO_COLL_NAME_USERS)
             .create_index(user_model, None)
             .await
             .expect("creating database index for users should work");
