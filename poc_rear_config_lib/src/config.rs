@@ -33,7 +33,7 @@ impl Config {
     pub const DEFAULT_SERVICE_IP: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
     pub const DEFAULT_OTEL_URL: &str = "https://localhost:4317";
     pub const DEFAULT_LOG_FILTER: &str = "INFO";
-    pub const DEFAULT_DEV_MODE: bool = true;
+    pub const DEFAULT_DEV_MODE: bool = false;
 
     pub const MONGO_DB_NAME: &str = Config::APP_NAME;
     pub const MONGO_COLL_NAME_WOTD: &str = "wotd";
