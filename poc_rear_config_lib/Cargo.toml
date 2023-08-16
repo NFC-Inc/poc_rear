@@ -18,5 +18,5 @@ opentelemetry-otlp = { version = "0.12.0", features = ["tonic"]}
 opentelemetry-semantic-conventions = "0.9.0"
 
 dotenv = "0.15.0"
-mongodb = "2.5.0"
+mongodb = "2.6.1"
 log = "0.4.19"

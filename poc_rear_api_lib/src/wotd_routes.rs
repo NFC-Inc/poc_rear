@@ -2,28 +2,20 @@ use axum::{
     extract::Path,
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{get, post},
-    Extension, Form, Json, Router,
+    Extension, Form, Json,
 };
 use mongodb::{bson::oid::ObjectId, Client};
 use poc_rear_config_lib::config::Config;
-use poc_rear_user_lib::user_models::User;
-use poc_rear_wotd_lib::wotd_models::{CreateWotdDto, DisplayWotdDto};
+use poc_rear_user_lib::user_models::DtoUser;
+use poc_rear_wotd_lib::wotd_models::{DtoWotdCreate, WotdModel};
 use tokio_stream::StreamExt;
 
-pub fn wotd_router() -> Router {
-    Router::new()
-        .route("/", get(get_wotd))
-        .route("/", post(create_wotd))
-        .route("/:word", get(get_one_wotd))
-}
-
-async fn get_one_wotd(
-    Extension(_user): Extension<User>,
+pub async fn get_one_wotd(
+    Extension(_user): Extension<DtoUser>,
     Extension(client): Extension<std::sync::Arc<Client>>,
     word: Path<String>,
 ) -> Response {
-    let collection: mongodb::Collection<DisplayWotdDto> = client
+    let collection: mongodb::Collection<WotdModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_WOTD);
     let word_name = word.to_string();
@@ -44,11 +36,11 @@ async fn get_one_wotd(
     }
 }
 
-async fn get_wotd(
-    Extension(_user): Extension<User>,
+pub async fn get_wotd(
+    Extension(_user): Extension<DtoUser>,
     Extension(client): Extension<std::sync::Arc<Client>>,
 ) -> Response {
-    let collection: mongodb::Collection<DisplayWotdDto> = client
+    let collection: mongodb::Collection<WotdModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_WOTD);
     match collection.find(None, None).await {
@@ -71,19 +63,21 @@ async fn get_wotd(
     }
 }
 
-async fn create_wotd(
-    Extension(_user): Extension<User>,
+pub async fn create_wotd(
+    Extension(dto_user): Extension<DtoUser>,
     Extension(client): Extension<std::sync::Arc<Client>>,
-    Form(create_word_dto): Form<CreateWotdDto>,
+    Form(create_word_dto): Form<DtoWotdCreate>,
 ) -> (StatusCode, String) {
     let create_word = create_word_dto;
 
-    let wotd = DisplayWotdDto {
+    let wotd = WotdModel {
         _id: ObjectId::new(),
-        created_by_id: ObjectId::new(),
+        created_by_id: dto_user._id,
         word: create_word.word.clone(),
         definition: create_word.definition.clone(),
         sentence: create_word.sentence.clone(),
+        created_at: chrono::Utc::now().into(),
+        updated_at: chrono::Utc::now().into(),
     };
 
     let collection = client
