@@ -1,11 +1,26 @@
 use std::{env, net::Ipv4Addr};
 
 use crate::config::Config;
-
+/// # Use this for reading config from Environment Variables
+/// The goal with this enum is to provide a way to access typed configuration from Environement
+/// variables.
+///
+/// This will allow the type to be validated before it is used by the program.
+///
+/// ## Steps to add new Environment Variables:
+/// 1. Add the key name to this enum.
+/// 1. Add the new variant in the `as_str` impl
+///   (use the name of the env var you would like to provide).
+/// 1. Implement the 'From' trait. You should implement this for the value
+///   that you would like the Env Var to be read as.
 pub enum ConfigEnvKey {
+    /// Url used to configure otlp service.
     OtelCollectorUrl,
+    /// Port that the service will bind to.
     ServicePort,
+    /// Ip that the service will bind to.
     ServiceIp,
+    /// Determines if the app should be configured for development, or production.
     DevMode,
 }
 
