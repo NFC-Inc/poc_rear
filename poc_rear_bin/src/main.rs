@@ -6,7 +6,8 @@ use axum::{
 use poc_rear_api_lib::{auth_routes, webutil};
 use poc_rear_config_lib::config;
 use std::{net::SocketAddr, sync::Arc};
-use tower_http::trace::TraceLayer;
+use tower_http::trace::{self, TraceLayer};
+use tracing::Level;
 
 #[tokio::main]
 async fn main() {
@@ -25,9 +26,14 @@ async fn main() {
         .route("/auth/login", post(auth_routes::user_login))
         .route("/auth/login", get(auth_routes::get_user_login))
         .layer(Extension(client))
-        .layer(TraceLayer::new_for_http())
         .nest("/health", webutil::health_router())
-        .fallback(webutil::not_found);
+        .fallback(webutil::not_found)
+        .layer(
+            TraceLayer::new_for_http()
+                .on_request(trace::DefaultOnRequest::new().level(Level::INFO))
+                .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
+                .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
+        );
 
     let addr = SocketAddr::from((config.service_ip(), config.service_port()));
     axum::Server::bind(&addr)

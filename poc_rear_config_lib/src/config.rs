@@ -1,6 +1,7 @@
 use dotenv::dotenv;
 use poc_rear_user_lib::user_models::User;
 use poc_rear_wotd_lib::wotd_models::DisplayWotdDto;
+use tracing::metadata::LevelFilter;
 
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
@@ -32,13 +33,11 @@ impl Config {
     pub const DEFAULT_SERVICE_IP: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
     pub const DEFAULT_OTEL_URL: &str = "https://localhost:4317";
     pub const DEFAULT_LOG_FILTER: &str = "INFO";
-    pub const DEFAULT_TRACE_FILTER: &str =
-        "rust_axum=debug,axum=debug,tower_http=debug,mongodb=debug";
+    pub const DEFAULT_DEV_MODE: bool = true;
 
     pub const MONGO_DB_NAME: &str = Config::APP_NAME;
     pub const MONGO_COLL_NAME_WOTD: &str = "wotd";
     pub const MONGO_COLL_NAME_USER: &str = "user";
-    pub const DEVELOPMENT: bool = true;
     pub const AUTH_TOKEN_STRING: &str = "access_token";
 
     pub fn new() -> Config {
@@ -60,12 +59,7 @@ impl Config {
             self.service_ip(),
             self.service_port()
         );
-        log::log!(
-            level,
-            "Sending ({}) traces to   : [{}]",
-            Config::DEFAULT_TRACE_FILTER,
-            self.otel_url()
-        );
+        log::log!(level, "Sending traces to   : [{}]", self.otel_url());
     }
 
     pub fn service_ip(&self) -> Ipv4Addr {
@@ -103,20 +97,25 @@ impl Config {
             .install_batch(opentelemetry::runtime::Tokio)
             .unwrap();
 
-        tracing_subscriber::registry()
-            .with(
-                tracing_subscriber::fmt::layer().with_filter(
-                    EnvFilter::try_from_default_env()
-                        .unwrap_or(EnvFilter::new(Config::DEFAULT_LOG_FILTER)),
-                ),
-            )
-            .with(
-                tracing_opentelemetry::layer()
-                    .with_tracer(tracer)
-                    .with_filter(EnvFilter::from_default_env()),
-            )
-            .try_init()
-            .unwrap();
+        let layered = tracing_subscriber::registry().with(
+            tracing_subscriber::fmt::layer()
+                // This might need to be set only for local dev if logs need to be sent.
+                .pretty()
+                .with_filter(EnvFilter::from_default_env()),
+        );
+
+        if !bool::from(ConfigEnvKey::DevMode) {
+            layered
+                .with(
+                    tracing_opentelemetry::layer()
+                        .with_tracer(tracer)
+                        .with_filter(LevelFilter::INFO),
+                )
+                .try_init()
+                .unwrap();
+        } else {
+            layered.try_init().unwrap();
+        }
     }
 
     pub async fn init_mongo() -> mongodb::Client {

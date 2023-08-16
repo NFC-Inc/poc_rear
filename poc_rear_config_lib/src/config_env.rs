@@ -6,6 +6,7 @@ pub enum ConfigEnvKey {
     OtelCollectorUrl,
     ServicePort,
     ServiceIp,
+    DevMode,
 }
 
 impl ConfigEnvKey {
@@ -14,6 +15,7 @@ impl ConfigEnvKey {
             ConfigEnvKey::ServicePort => "PORT",
             ConfigEnvKey::ServiceIp => "ACTIX_IP",
             ConfigEnvKey::OtelCollectorUrl => "OTEL_COLLECTOR_URL",
+            ConfigEnvKey::DevMode => "DEV_MODE",
         }
     }
 }
@@ -55,6 +57,21 @@ impl From<ConfigEnvKey> for Ipv4Addr {
         }
     }
 }
+
+impl From<ConfigEnvKey> for bool {
+    fn from(env_key: ConfigEnvKey) -> Self {
+        match env_key {
+            ConfigEnvKey::DevMode => match env::var(ConfigEnvKey::DevMode.as_str()) {
+                Ok(is_dev) => is_dev
+                    .parse::<bool>()
+                    .unwrap_or_else(|_| panic!("{} should be a valid bool!", is_dev)),
+                Err(_) => Config::DEFAULT_DEV_MODE,
+            },
+            _ => panic!("this key cannot be converted to String"),
+        }
+    }
+}
+
 impl From<ConfigEnvKey> for String {
     fn from(env_key: ConfigEnvKey) -> Self {
         match env_key {

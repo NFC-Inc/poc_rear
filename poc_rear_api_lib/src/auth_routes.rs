@@ -1,5 +1,5 @@
 use anyhow::Result;
-use poc_rear_config_lib::config::Config;
+use poc_rear_config_lib::{config::Config, config_env::ConfigEnvKey};
 use poc_rear_user_lib::user_models::{User, UserLogin};
 use std::sync::Arc;
 
@@ -27,14 +27,12 @@ pub async fn user_login(
     {
         Ok(Some(u)) => {
             if u.username == username && u.password == password {
-                log::info!("matched user!");
+                tracing::info!(u.username, "matched user!");
                 return Ok(build_login_response(username));
             }
             Err(StatusCode::BAD_REQUEST)
         }
-        Ok(None) => {
-            Err(StatusCode::BAD_REQUEST)
-        }
+        Ok(None) => Err(StatusCode::BAD_REQUEST),
         Err(err) => {
             // An error occurred while searching the database.
             tracing::error!("an error occurred while searching for username ({username}): {err}");
@@ -56,7 +54,7 @@ fn build_login_response(username: String) -> Response {
                 "{}={}; Path=/; HttpOnly; SameSite=Strict; Max-Age=999999{}",
                 Config::AUTH_TOKEN_STRING,
                 format!("testing.{}.testing", username),
-                if !Config::DEVELOPMENT {
+                if !bool::from(ConfigEnvKey::DevMode) {
                     "; Secure;"
                 } else {
                     ""
@@ -77,7 +75,7 @@ fn build_logout_response() -> Response {
                 "{}={}; Path=/; HttpOnly; SameSite=Strict; Max-Age=999999{}",
                 Config::AUTH_TOKEN_STRING,
                 "invalidated",
-                if !Config::DEVELOPMENT {
+                if !bool::from(ConfigEnvKey::DevMode) {
                     "; Secure;"
                 } else {
                     ""
@@ -100,12 +98,8 @@ pub async fn user_logout(
         .find_one(doc! { "username": &user.username }, None)
         .await
     {
-        Ok(Some(_)) => {
-            Ok(build_logout_response())
-        }
-        Ok(None) => {
-            Err(StatusCode::BAD_REQUEST)
-        }
+        Ok(Some(_)) => Ok(build_logout_response()),
+        Ok(None) => Err(StatusCode::BAD_REQUEST),
         Err(err) => {
             // An error occurred while searching the database.
             tracing::error!(
