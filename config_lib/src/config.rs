@@ -1,8 +1,8 @@
 use dotenv::dotenv;
+use tracing::metadata::LevelFilter;
 use user_lib::user_models::UserModel;
 use wotd_lib::word_models::WordModel;
 use wotd_lib::word_queue::QueueItemWordModel;
-use tracing::metadata::LevelFilter;
 
 use std::net::Ipv4Addr;
 use std::path::PathBuf;

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use config_lib::{config::Config, config_env::ConfigEnvKey};
-use user_lib::user_models::{DtoUser, DtoUserLogin, UserModel};
 use std::sync::Arc;
+use user_lib::user_models::{DtoUser, DtoUserLogin, UserModel};
 
 use axum::{
     http::{Request, StatusCode},

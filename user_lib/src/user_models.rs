@@ -39,13 +39,13 @@ pub struct UserModel {
 
 impl From<UserModel> for DtoUser {
     fn from(user_model: UserModel) -> Self {
-        return DtoUser {
+        DtoUser {
             _id: user_model._id,
             username: user_model.username,
             email: user_model.email,
             created_at: user_model.created_at.into(),
             updated_at: user_model.updated_at.into(),
-        };
+        }
     }
 }
 

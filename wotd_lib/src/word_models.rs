@@ -39,7 +39,7 @@ pub struct WordModel {
 
 impl From<WordModel> for DtoWotd {
     fn from(wotd_model: WordModel) -> Self {
-        return DtoWotd {
+        DtoWotd {
             _id: wotd_model._id,
             created_by_id: wotd_model.created_by_id,
             word: wotd_model.word,
@@ -47,6 +47,6 @@ impl From<WordModel> for DtoWotd {
             definition: wotd_model.definition,
             created_at: wotd_model.created_at.into(),
             updated_at: wotd_model.updated_at.into(),
-        };
+        }
     }
 }

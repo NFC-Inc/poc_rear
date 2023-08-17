@@ -4,14 +4,14 @@ use axum::{
     response::{IntoResponse, Response},
     Extension, Form, Json,
 };
-use mongodb::{bson::oid::ObjectId, Client};
 use config_lib::config::Config;
+use mongodb::{bson::oid::ObjectId, Client};
+use tokio_stream::StreamExt;
 use user_lib::user_models::DtoUser;
 use wotd_lib::{
     word_models::{DtoWotdCreate, WordModel},
     word_queue::QueueItemWordModel,
 };
-use tokio_stream::StreamExt;
 
 pub async fn suggest_new_wotd(
     Extension(dto_user): Extension<DtoUser>,
@@ -130,9 +130,9 @@ pub async fn update_wotd(
             {
                 Ok(deleted) => {
                     println!("Deleted {} document(s).", deleted.deleted_count);
-                    return (StatusCode::OK, Json(Some(wotd))).into_response();
+                    (StatusCode::OK, Json(Some(wotd))).into_response()
                 }
-                Err(_) => return StatusCode::NOT_FOUND.into_response(),
+                Err(_) => StatusCode::NOT_FOUND.into_response(),
             }
         }
         Ok(None) => StatusCode::NOT_FOUND.into_response(),

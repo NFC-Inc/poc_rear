@@ -1,35 +1,14 @@
+use api_lib::{auth_routes, user_routes, webutil, word_routes};
 use axum::{
     middleware,
     routing::{get, post},
     Extension, Router,
 };
-use mongodb::Client;
-use api_lib::{auth_routes, user_routes, webutil, word_routes};
 use config_lib::config;
-use std::{
-    net::SocketAddr,
-    sync::Arc,
-};
+use mongodb::Client;
+use std::{net::SocketAddr, sync::Arc};
 use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
-
-fn wotd_routes() -> Router {
-    Router::new()
-        .route("/", get(word_routes::get_wotd))
-        .route("/suggest", post(word_routes::suggest_new_wotd))
-        .route("/update", post(word_routes::update_wotd))
-}
-
-fn words_routes() -> Router {
-    Router::new()
-        .route("/", post(word_routes::create_word))
-        .route("/", get(word_routes::get_words))
-        .route("/:word", get(word_routes::get_word))
-}
-
-fn users_routes() -> Router {
-    Router::new().route("/:username", get(user_routes::get_user))
-}
 
 #[tokio::main]
 async fn main() {
@@ -40,21 +19,17 @@ async fn main() {
     config.log_config_values(log::Level::Info);
 
     let app = Router::new()
-        .nest(
-            "/api",
-            Router::new()
-                .nest("/wotd", wotd_routes())
-                .nest("/words", words_routes())
-                .nest("/users", users_routes()),
-        )
-        .route_layer(middleware::from_fn(auth_routes::auth))
-        .nest(
-            "/auth",
-            Router::new()
-                .route("/logout", get(auth_routes::user_logout))
-                .route("/login", post(auth_routes::user_login))
-                .route("/account", post(user_routes::create_user)),
-        )
+        .route("/api/wotd", get(word_routes::get_wotd))
+        .route("api/wotd/update", post(word_routes::update_wotd))
+        .route("/api/wotd/suggest", post(word_routes::suggest_new_wotd))
+        .route("/api/words", post(word_routes::create_word))
+        .route("/api/words", get(word_routes::get_words))
+        .route("/api/words/:word", get(word_routes::get_word))
+        .route("/api/users/:username", get(user_routes::get_user))
+        .route("/auth/logout", get(auth_routes::user_logout))
+        .route_layer(middleware::from_fn(auth_routes::auth)) // All routes above will require 'access_token' cookie
+        .route("/auth/login", post(auth_routes::user_login))
+        .route("/auth/account", post(user_routes::create_user))
         .layer(Extension(client))
         .nest("/health", webutil::health_router())
         .layer(

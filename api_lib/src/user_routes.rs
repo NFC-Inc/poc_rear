@@ -4,8 +4,8 @@ use axum::{
     response::{IntoResponse, Response},
     Extension, Form, Json,
 };
-use mongodb::{bson::oid::ObjectId, Client};
 use config_lib::config::Config;
+use mongodb::{bson::oid::ObjectId, Client};
 use user_lib::user_models::{DtoUserCreate, UserModel};
 
 pub async fn create_user(
