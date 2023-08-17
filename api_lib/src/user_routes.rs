@@ -5,8 +5,8 @@ use axum::{
     Extension, Form, Json,
 };
 use mongodb::{bson::oid::ObjectId, Client};
-use poc_rear_config_lib::config::Config;
-use poc_rear_user_lib::user_models::{DtoUserCreate, UserModel};
+use config_lib::config::Config;
+use user_lib::user_models::{DtoUserCreate, UserModel};
 
 pub async fn create_user(
     Extension(client): Extension<std::sync::Arc<Client>>,

@@ -1,6 +1,6 @@
 use anyhow::Result;
-use poc_rear_config_lib::{config::Config, config_env::ConfigEnvKey};
-use poc_rear_user_lib::user_models::{DtoUser, DtoUserLogin, UserModel};
+use config_lib::{config::Config, config_env::ConfigEnvKey};
+use user_lib::user_models::{DtoUser, DtoUserLogin, UserModel};
 use std::sync::Arc;
 
 use axum::{
@@ -39,10 +39,6 @@ pub async fn user_login(
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
-}
-
-pub async fn get_user_login() -> Result<Response, StatusCode> {
-    Ok(build_login_response("temp_testing".to_string()))
 }
 
 fn build_login_response(username: String) -> Response {
@@ -109,10 +105,6 @@ pub async fn user_logout(
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
-}
-
-pub async fn user_auth() -> Result<Response, StatusCode> {
-    Err(StatusCode::NOT_IMPLEMENTED)
 }
 
 pub async fn auth<T>(

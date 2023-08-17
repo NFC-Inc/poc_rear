@@ -1,0 +1,10 @@
+version: "2"
+services:
+  poc_rear_bin:
+    image: pitoniak32/poc_rear:0.0.1
+    ports:
+      - "8080:8080"
+    environment:
+      - RUST_LOG=INFO
+      - DEV_MODE=true
+      - MONGODB_URI=mongodb://mongo:27017

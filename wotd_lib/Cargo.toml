@@ -1,5 +1,5 @@
 [package]
-name = "poc_rear_wotd_lib"
+name = "wotd_lib"
 version = "0.1.0"
 edition = "2021"
 

@@ -71,6 +71,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c6f84b74db2535ebae81eede2f39b947dcbf01d093ae5f791e5dd414a1bf289"
 
 [[package]]
+name = "api_lib"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "bson",
+ "chrono",
+ "config_lib",
+ "http",
+ "http-body",
+ "log",
+ "mongodb",
+ "serde",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "user_lib",
+ "wotd_lib",
+]
+
+[[package]]
 name = "async-stream"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -281,6 +302,23 @@ dependencies = [
  "time 0.1.45",
  "wasm-bindgen",
  "winapi",
+]
+
+[[package]]
+name = "config_lib"
+version = "0.1.0"
+dependencies = [
+ "dotenv",
+ "log",
+ "mongodb",
+ "opentelemetry 0.19.0",
+ "opentelemetry-otlp",
+ "opentelemetry-semantic-conventions",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "user_lib",
+ "wotd_lib",
 ]
 
 [[package]]
@@ -1299,32 +1337,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
-name = "poc_rear_api_lib"
+name = "poc_rear"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "api_lib",
  "axum",
- "bson",
- "chrono",
- "http",
- "http-body",
- "log",
- "mongodb",
- "poc_rear_config_lib",
- "poc_rear_user_lib",
- "poc_rear_wotd_lib",
- "serde",
- "tokio",
- "tokio-stream",
- "tracing",
-]
-
-[[package]]
-name = "poc_rear_bin"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
+ "config_lib",
  "dotenv",
  "env_logger",
  "http",
@@ -1334,10 +1353,6 @@ dependencies = [
  "opentelemetry 0.19.0",
  "opentelemetry-otlp",
  "opentelemetry-semantic-conventions",
- "poc_rear_api_lib",
- "poc_rear_config_lib",
- "poc_rear_user_lib",
- "poc_rear_wotd_lib",
  "serde",
  "serde_json",
  "tokio",
@@ -1347,43 +1362,8 @@ dependencies = [
  "tracing-bunyan-formatter",
  "tracing-opentelemetry",
  "tracing-subscriber",
-]
-
-[[package]]
-name = "poc_rear_config_lib"
-version = "0.1.0"
-dependencies = [
- "dotenv",
- "log",
- "mongodb",
- "opentelemetry 0.19.0",
- "opentelemetry-otlp",
- "opentelemetry-semantic-conventions",
- "poc_rear_user_lib",
- "poc_rear_wotd_lib",
- "tracing",
- "tracing-opentelemetry",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "poc_rear_user_lib"
-version = "0.1.0"
-dependencies = [
- "bson",
- "chrono",
- "mongodb",
- "serde",
-]
-
-[[package]]
-name = "poc_rear_wotd_lib"
-version = "0.1.0"
-dependencies = [
- "bson",
- "chrono",
- "mongodb",
- "serde",
+ "user_lib",
+ "wotd_lib",
 ]
 
 [[package]]
@@ -2369,6 +2349,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
+name = "user_lib"
+version = "0.1.0"
+dependencies = [
+ "bson",
+ "chrono",
+ "mongodb",
+ "serde",
+]
+
+[[package]]
 name = "uuid"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2614,6 +2604,16 @@ checksum = "524e57b2c537c0f9b1e69f1965311ec12182b4122e45035b1508cd24d2adadb1"
 dependencies = [
  "cfg-if",
  "windows-sys",
+]
+
+[[package]]
+name = "wotd_lib"
+version = "0.1.0"
+dependencies = [
+ "bson",
+ "chrono",
+ "mongodb",
+ "serde",
 ]
 
 [[package]]

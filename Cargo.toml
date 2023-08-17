@@ -1,9 +1,9 @@
 [workspace]
 
 members = [
-    "poc_rear_config_lib",
-    "poc_rear_user_lib",
-    "poc_rear_wotd_lib",
-    "poc_rear_api_lib",
-    "poc_rear_bin",
+    "config_lib",
+    "user_lib",
+    "wotd_lib",
+    "api_lib",
+    "poc_rear",
 ]
