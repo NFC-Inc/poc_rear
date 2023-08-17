@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y musl-tools musl-dev
 RUN rustup target add x86_64-unknown-linux-musl
 RUN update-ca-certificates
 
-WORKDIR /axum_poc_rear/
+WORKDIR /poc_rear/
 
 COPY ./ .
 
@@ -14,7 +14,7 @@ FROM alpine
 
 WORKDIR /app
 
-COPY --from=builder /axum_poc_rear/target/x86_64-unknown-linux-musl/release/poc_rear ./
+COPY --from=builder /poc_rear/target/x86_64-unknown-linux-musl/release/poc_rear ./
 
 ENV SERVICE_PORT=8080 SERVICE_IP=0.0.0.0
 

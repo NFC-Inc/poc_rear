@@ -1,7 +1,7 @@
 use dotenv::dotenv;
-use poc_rear_user_lib::user_models::UserModel;
-use poc_rear_wotd_lib::word_models::WordModel;
-use poc_rear_wotd_lib::word_queue::QueueItemWordModel;
+use user_lib::user_models::UserModel;
+use wotd_lib::word_models::WordModel;
+use wotd_lib::word_queue::QueueItemWordModel;
 use tracing::metadata::LevelFilter;
 
 use std::net::Ipv4Addr;
@@ -32,7 +32,8 @@ impl Config {
     pub const APP_NAME: &str = "poc_rear";
     pub const DEFAULT_SERVICE_PORT: u16 = 8080;
     pub const DEFAULT_SERVICE_IP: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
-    pub const DEFAULT_OTEL_URL: &str = "https://localhost:4317";
+    pub const DEFAULT_OTEL_URL: &str = "https://0.0.0.0:4317";
+    pub const DEFAULT_MONGO_URI: &str = "mongodb://0.0.0.0:27017";
     pub const DEFAULT_LOG_FILTER: &str = "INFO";
     pub const DEFAULT_DEV_MODE: bool = false;
     pub const AUTH_TOKEN_STRING: &str = "access_token";
@@ -122,11 +123,12 @@ impl Config {
 
     pub async fn init_mongo() -> mongodb::Client {
         // TODO: add way to timeout if mongo does not connect.
-        let uri =
-            std::env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".into());
+        let uri = String::from(ConfigEnvKey::MongoDBUri);
+
         let client = mongodb::Client::with_uri_str(uri)
             .await
             .expect("failed to connect");
+
         let options = mongodb::options::IndexOptions::builder()
             .unique(true)
             .build();

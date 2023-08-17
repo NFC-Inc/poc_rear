@@ -51,6 +51,8 @@ use crate::config::Config;
 pub enum ConfigEnvKey {
     /// Url used to configure otlp service.
     OtelCollectorUrl,
+    /// Url used to connect to mongodb.
+    MongoDBUri,
     /// Port that the service will bind to.
     ServicePort,
     /// Ip that the service will bind to.
@@ -65,6 +67,7 @@ impl ConfigEnvKey {
             ConfigEnvKey::ServicePort => "SERVICE_PORT",
             ConfigEnvKey::ServiceIp => "SERVICE_IP",
             ConfigEnvKey::OtelCollectorUrl => "OTEL_COLLECTOR_URL",
+            ConfigEnvKey::MongoDBUri => "MONGODB_URI",
             ConfigEnvKey::DevMode => "DEV_MODE",
         }
     }
@@ -163,6 +166,10 @@ impl From<ConfigEnvKey> for String {
                     Err(_) => Config::DEFAULT_OTEL_URL.to_string(),
                 }
             }
+            ConfigEnvKey::MongoDBUri => match env::var("MONGODB_URI") {
+                Ok(uri) => uri,
+                Err(_) => Config::DEFAULT_MONGO_URI.to_string(),
+            },
             _ => panic!("this key cannot be converted to String. {DEFAULT_PANIC_MSG}"),
         }
     }

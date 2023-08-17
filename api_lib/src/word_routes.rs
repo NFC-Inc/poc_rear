@@ -5,9 +5,9 @@ use axum::{
     Extension, Form, Json,
 };
 use mongodb::{bson::oid::ObjectId, Client};
-use poc_rear_config_lib::config::Config;
-use poc_rear_user_lib::user_models::DtoUser;
-use poc_rear_wotd_lib::{
+use config_lib::config::Config;
+use user_lib::user_models::DtoUser;
+use wotd_lib::{
     word_models::{DtoWotdCreate, WordModel},
     word_queue::QueueItemWordModel,
 };
@@ -140,7 +140,7 @@ pub async fn update_wotd(
     }
 }
 
-pub async fn get_one_word(
+pub async fn get_word(
     Extension(_user): Extension<DtoUser>,
     Extension(client): Extension<std::sync::Arc<Client>>,
     word: Path<String>,

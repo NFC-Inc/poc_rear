@@ -1,15 +1,15 @@
 [package]
-name = "poc_rear_bin"
+name = "poc_rear"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-poc_rear_user_lib = { path = "../poc_rear_user_lib", version = "0.1.0" }
-poc_rear_wotd_lib = { path = "../poc_rear_wotd_lib", version = "0.1.0" }
-poc_rear_api_lib = { path = "../poc_rear_api_lib", version = "0.1.0" }
-poc_rear_config_lib = { path = "../poc_rear_config_lib", version = "0.1.0" }
+user_lib = { path = "../user_lib", version = "0.1.0" }
+wotd_lib = { path = "../wotd_lib", version = "0.1.0" }
+api_lib = { path = "../api_lib", version = "0.1.0" }
+config_lib = { path = "../config_lib", version = "0.1.0" }
 
 axum = "0.6.20"
 tokio = { version = "1.28.2", features = ["full"] }
