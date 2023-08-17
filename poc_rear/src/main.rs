@@ -20,7 +20,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/api/wotd", get(word_routes::get_wotd))
-        .route("api/wotd/update", post(word_routes::update_wotd))
+        .route("/api/wotd/update", post(word_routes::update_wotd))
         .route("/api/wotd/suggest", post(word_routes::suggest_new_wotd))
         .route("/api/words", post(word_routes::create_word))
         .route("/api/words", get(word_routes::get_words))
