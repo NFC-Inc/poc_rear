@@ -4,6 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
     Extension, Form, Json,
 };
+use bson::doc;
 use config_lib::config::Config;
 use mongodb::{bson::oid::ObjectId, Client};
 use user_lib::user_models::{DtoUserCreate, UserModel};
@@ -12,25 +13,35 @@ pub async fn create_user(
     Extension(client): Extension<std::sync::Arc<Client>>,
     Form(create_user_form): Form<DtoUserCreate>,
 ) -> Response {
-    let user = UserModel {
-        _id: ObjectId::new(),
-        username: create_user_form.username.clone(),
-        password: create_user_form.password.clone(),
-        email: create_user_form.email.clone(),
-        created_at: chrono::Utc::now().into(),
-        updated_at: chrono::Utc::now().into(),
-    };
-
     let collection = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_USERS);
 
-    let result = collection.insert_one(user, None).await;
+    match collection
+        .find_one(doc! { "username": create_user_form.username.clone()}, None)
+        .await
+    {
+        Ok(None) => {
+            let user = UserModel {
+                _id: ObjectId::new(),
+                username: create_user_form.username.clone(),
+                password: create_user_form.password.clone(),
+                email: create_user_form.email.clone(),
+                created_at: chrono::Utc::now().into(),
+                updated_at: chrono::Utc::now().into(),
+            };
+            let result = collection.insert_one(user, None).await;
 
-    match result {
-        Ok(_) => (StatusCode::OK, "user created!".to_string()).into_response(),
-        Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response(),
+            match result {
+                Ok(_) => (StatusCode::OK, "user created!".to_string()).into_response(),
+                Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response(),
+            }
+        }
+        Ok(Some(_user)) => (StatusCode::CONFLICT, "username already taken").into_response(),
+        _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
+
+    // First check if the username already exists, if it does return a 409 CONFLICT code.
 }
 
 pub async fn get_user(

@@ -6,7 +6,7 @@ metadata:
   labels:
     app: poc-rear
 spec:
-  replicas: 3
+  replicas: 4
   selector:
     matchLabels:
       app: poc-rear
@@ -43,4 +43,3 @@ spec:
       protocol: TCP
       port: 8080
       targetPort: 8080
-
