@@ -29,13 +29,11 @@ async fn main() {
         .route("/auth/login", post(auth_routes::user_login))
         .route("/auth/account", post(user_routes::create_user))
         .layer(Extension(client))
+        .nest("/health", webutil::health_router())
         .layer(
             TraceLayer::new_for_http()
-                .on_request(trace::DefaultOnRequest::new().level(Level::INFO))
                 .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
-                .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
         )
-        .nest("/health", webutil::health_router())
         .fallback(webutil::not_found);
 
     let addr = SocketAddr::from((config.service_ip(), config.service_port()));
