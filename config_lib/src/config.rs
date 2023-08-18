@@ -102,8 +102,6 @@ impl Config {
 
         let layered = tracing_subscriber::registry().with(
             tracing_subscriber::fmt::layer()
-                // This might need to be set only for local dev if logs need to be sent.
-                .pretty()
                 .with_filter(EnvFilter::from_default_env()),
         );
 

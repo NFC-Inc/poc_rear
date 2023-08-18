@@ -15,9 +15,7 @@ async fn main() {
     let config = config::Config::new();
     config::Config::init_otel();
     let client: Arc<Client> = Arc::new(config::Config::init_mongo().await);
-
     config.log_config_values(log::Level::Info);
-
     let app = Router::new()
         .route("/api/wotd", get(word_routes::get_wotd))
         .route("/api/wotd/update", post(word_routes::update_wotd))
@@ -34,9 +32,7 @@ async fn main() {
         .nest("/health", webutil::health_router())
         .layer(
             TraceLayer::new_for_http()
-                .on_request(trace::DefaultOnRequest::new().level(Level::INFO))
                 .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
-                .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
         )
         .fallback(webutil::not_found);
 
