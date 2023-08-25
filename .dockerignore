@@ -1,0 +1,8 @@
+target
+fly.toml
+docker-compose*
+k8s*
+otel-collector-config.yaml
+README.md
+spam.zsh
+
