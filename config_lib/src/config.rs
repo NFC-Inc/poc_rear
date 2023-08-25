@@ -100,10 +100,8 @@ impl Config {
             .install_batch(opentelemetry::runtime::Tokio)
             .unwrap();
 
-        let layered = tracing_subscriber::registry().with(
-            tracing_subscriber::fmt::layer()
-                .with_filter(EnvFilter::from_default_env()),
-        );
+        let layered = tracing_subscriber::registry()
+            .with(tracing_subscriber::fmt::layer().with_filter(EnvFilter::from_default_env()));
 
         if !bool::from(ConfigEnvKey::DevMode) {
             layered
