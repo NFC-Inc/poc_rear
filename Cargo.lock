@@ -2858,10 +2858,13 @@ dependencies = [
 name = "wotd_lib"
 version = "0.1.0"
 dependencies = [
+ "axum",
  "bson",
  "chrono",
  "mongodb",
  "serde",
+ "tokio-stream",
+ "tracing",
 ]
 
 [[package]]

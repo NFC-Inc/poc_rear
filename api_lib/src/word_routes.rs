@@ -6,9 +6,9 @@ use axum::{
 };
 use config_lib::config::Config;
 use mongodb::{bson::oid::ObjectId, Client};
-use tokio_stream::StreamExt;
 use user_lib::user_models::DtoUser;
 use wotd_lib::{
+    word_logic::{create_one_word, get_all_words, get_one_word},
     word_models::{DtoWotdCreate, WordModel},
     word_queue::QueueItemWordModel,
 };
@@ -147,15 +147,8 @@ pub async fn get_word(
     let collection: mongodb::Collection<WordModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_WORDS);
-    let word_name = word.to_string();
 
-    let wotd = collection
-        .find_one(mongodb::bson::doc! { "word": &word_name }, None)
-        .await
-        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
-
-    Ok((StatusCode::OK, Json(Some(wotd))).into_response())
+    get_one_word(collection, word.to_string()).await
 }
 
 pub async fn get_words(
@@ -165,21 +158,8 @@ pub async fn get_words(
     let collection: mongodb::Collection<WordModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_WORDS);
-    let mut cursor_wotd = collection
-        .find(None, None)
-        .await
-        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let mut wotds = Vec::new();
-    while let Some(wotd) = cursor_wotd.next().await {
-        match wotd {
-            Ok(w) => wotds.push(w),
-            Err(err) => {
-                tracing::warn!("error occured during mongo cursor iteration: {err}")
-            }
-        }
-    }
-    Ok((StatusCode::OK, Json(wotds)).into_response())
+    get_all_words(collection).await
 }
 
 pub async fn create_word(
@@ -187,26 +167,9 @@ pub async fn create_word(
     Extension(client): Extension<std::sync::Arc<Client>>,
     Form(create_word_dto): Form<DtoWotdCreate>,
 ) -> Result<Response, StatusCode> {
-    let create_word = create_word_dto;
-
-    let wotd = WordModel {
-        _id: ObjectId::new(),
-        created_by_id: dto_user._id,
-        word: create_word.word.clone(),
-        definition: create_word.definition.clone(),
-        sentence: create_word.sentence.clone(),
-        created_at: chrono::Utc::now().into(),
-        updated_at: chrono::Utc::now().into(),
-    };
-
     let collection = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_WORDS);
 
-    let _result = collection
-        .insert_one(wotd, None)
-        .await
-        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok((StatusCode::OK, "wotd added!".to_string()).into_response())
+    create_one_word(collection, dto_user._id, create_word_dto).await
 }
