@@ -1,4 +1,4 @@
-use api_lib::{auth_routes, user_routes, webutil, word_routes};
+use api_lib::{auth_guard, auth_routes, user_routes, webutil, word_routes};
 use axum::{
     middleware,
     routing::{get, post},
@@ -25,7 +25,7 @@ async fn main() {
         .route("/api/words/:word", get(word_routes::get_word))
         .route("/api/users/:username", get(user_routes::get_user))
         .route("/auth/logout", get(auth_routes::user_logout))
-        .route_layer(middleware::from_fn(auth_routes::auth)) // All routes above will require 'access_token' cookie
+        .route_layer(middleware::from_fn(auth_guard::auth)) // All routes above will require 'access_token' cookie
         .route("/auth/login", post(auth_routes::user_login))
         .route("/auth/account", post(user_routes::create_user))
         .layer(Extension(client))

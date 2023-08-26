@@ -1,3 +1,4 @@
+pub mod auth_guard;
 pub mod auth_routes;
 pub mod user_routes;
 pub mod webutil;

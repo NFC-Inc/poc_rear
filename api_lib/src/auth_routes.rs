@@ -4,8 +4,7 @@ use std::sync::Arc;
 use user_lib::user_models::{DtoUser, DtoUserLogin, UserModel};
 
 use axum::{
-    http::{Request, StatusCode},
-    middleware::Next,
+    http::StatusCode,
     response::{IntoResponse, Response},
     Extension, Form,
 };
@@ -18,31 +17,28 @@ pub async fn user_login(
     let username = user_form.username.clone();
     let password = user_form.password.clone();
 
+    tracing::info!("username: {username}, password: {password}");
+
     let user_collection: Collection<UserModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_USERS);
-    match user_collection
+
+    let user = user_collection
         .find_one(doc! { "username": &username }, None)
         .await
-    {
-        Ok(Some(u)) => {
-            if u.username == username && u.password == password {
-                tracing::info!(u.username, "matched user!");
-                return Ok(build_login_response(username));
-            }
-            Err(StatusCode::BAD_REQUEST)
-        }
-        Ok(None) => Err(StatusCode::BAD_REQUEST),
-        Err(err) => {
-            // An error occurred while searching the database.
-            tracing::error!("an error occurred while searching for username ({username}): {err}");
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    if user.username == username && user.password == password {
+        tracing::info!(user.username, "matched user!");
+        build_login_response(username)
+    } else {
+        Err(StatusCode::NOT_FOUND)
     }
 }
 
-fn build_login_response(username: String) -> Response {
-    Response::builder()
+fn build_login_response(username: String) -> Result<Response, StatusCode> {
+    Ok(Response::builder()
         .status(StatusCode::OK)
         .header(
             "Set-Cookie",
@@ -58,12 +54,12 @@ fn build_login_response(username: String) -> Response {
             ),
         )
         .body(http_body::Empty::new())
-        .unwrap()
-        .into_response()
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
+        .into_response())
 }
 
-fn build_logout_response() -> Response {
-    Response::builder()
+fn build_logout_response() -> Result<Response, StatusCode> {
+    Ok(Response::builder()
         .status(StatusCode::OK)
         .header(
             "Set-Cookie",
@@ -79,8 +75,8 @@ fn build_logout_response() -> Response {
             ),
         )
         .body(http_body::Empty::new())
-        .unwrap()
-        .into_response()
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
+        .into_response())
 }
 
 pub async fn user_logout(
@@ -90,60 +86,12 @@ pub async fn user_logout(
     let user_collection: Collection<UserModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_USERS);
-    match user_collection
+
+    user_collection
         .find_one(doc! { "username": &user.username }, None)
         .await
-    {
-        Ok(Some(_)) => Ok(build_logout_response()),
-        Ok(None) => Err(StatusCode::BAD_REQUEST),
-        Err(err) => {
-            // An error occurred while searching the database.
-            tracing::error!(
-                "an error occurred while searching for username ({}): {err}",
-                user.username
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
-}
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
 
-pub async fn auth<T>(
-    Extension(client): Extension<Arc<Client>>,
-    mut req: Request<T>,
-    next: Next<T>,
-) -> Result<Response, StatusCode> {
-    if let Some(cookie_header) = req.headers().get(http::header::COOKIE) {
-        let cookies: Vec<_> = cookie_header.to_str().unwrap().split(';').collect();
-        for cookie in cookies {
-            if cookie.contains(Config::AUTH_TOKEN_STRING) {
-                log::info!("found auth token: {cookie}");
-                let jwt_access_token =
-                    cookie.replace(&format!("{}=", Config::AUTH_TOKEN_STRING), "");
-                let parts: Vec<&str> = jwt_access_token.split('.').collect();
-                let user_collection: Collection<UserModel> = client
-                    .database(Config::MONGO_DB_NAME)
-                    .collection(Config::MONGO_COLL_NAME_USERS);
-
-                match user_collection
-                    .find_one(doc! {"username": parts.get(1)}, None)
-                    .await
-                {
-                    Ok(Some(user)) => {
-                        let dto_user = DtoUser::from(user);
-                        log::info!("found user: {dto_user:#?}");
-                        req.extensions_mut().insert(dto_user);
-                        return Ok(next.run(req).await);
-                    }
-                    Ok(None) => {
-                        return Err(StatusCode::UNAUTHORIZED);
-                    }
-                    Err(err) => {
-                        tracing::error!("an error occurred while searching db: {err}");
-                        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-                    }
-                }
-            }
-        }
-    }
-    Err(StatusCode::UNAUTHORIZED)
+    build_logout_response()
 }

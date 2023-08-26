@@ -1,8 +1,13 @@
-use axum::{http::StatusCode, routing::get, Json, Router};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::get,
+    Json, Router,
+};
 use serde::Serialize;
 
 #[derive(Serialize)]
-pub struct Response {
+pub struct CustomResponse {
     pub message: String,
 }
 
@@ -12,23 +17,32 @@ pub fn health_router() -> Router {
         .route("/liveness", get(healthcheck_liveness))
 }
 
-pub async fn healthcheck_readiness() -> (StatusCode, Json<Response>) {
-    let response = Response {
-        message: "Everything is working fine!".to_string(),
-    };
-    (StatusCode::OK, Json(response))
+pub async fn healthcheck_readiness() -> Result<Response, StatusCode> {
+    Ok((
+        StatusCode::OK,
+        Json(CustomResponse {
+            message: "Everything is working fine!".to_string(),
+        }),
+    )
+        .into_response())
 }
 
-pub async fn healthcheck_liveness() -> (StatusCode, Json<Response>) {
-    let response = Response {
-        message: "Everything is working fine!".to_string(),
-    };
-    (StatusCode::OK, Json(response))
+pub async fn healthcheck_liveness() -> Result<Response, StatusCode> {
+    Ok((
+        StatusCode::OK,
+        Json(CustomResponse {
+            message: "Everything is working fine!".to_string(),
+        }),
+    )
+        .into_response())
 }
 
-pub async fn not_found() -> (StatusCode, Json<Response>) {
-    let response = Response {
-        message: "Resource not found".to_string(),
-    };
-    (StatusCode::NOT_FOUND, Json(response))
+pub async fn not_found() -> Result<Response, StatusCode> {
+    Ok((
+        StatusCode::NOT_FOUND,
+        Json(CustomResponse {
+            message: "Resource not found".to_string(),
+        }),
+    )
+        .into_response())
 }
