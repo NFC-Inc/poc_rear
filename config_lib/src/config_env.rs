@@ -59,6 +59,8 @@ pub enum ConfigEnvKey {
     ServiceIp,
     /// Determines if the app should be configured for development, or production.
     DevMode,
+    /// The jwt authority uri.
+    Authority,
 }
 
 impl ConfigEnvKey {
@@ -69,6 +71,7 @@ impl ConfigEnvKey {
             ConfigEnvKey::OtelCollectorUrl => "OTEL_COLLECTOR_URL",
             ConfigEnvKey::MongoDBUri => "MONGODB_URI",
             ConfigEnvKey::DevMode => "DEV_MODE",
+            ConfigEnvKey::Authority => "AUTHORITY",
         }
     }
 }
@@ -160,16 +163,13 @@ impl From<ConfigEnvKey> for bool {
 impl From<ConfigEnvKey> for String {
     fn from(env_key: ConfigEnvKey) -> Self {
         match env_key {
-            ConfigEnvKey::OtelCollectorUrl => {
-                match env::var(ConfigEnvKey::OtelCollectorUrl.as_str()) {
-                    Ok(otel_url) => otel_url,
-                    Err(_) => Config::DEFAULT_OTEL_URL.to_string(),
-                }
+            ConfigEnvKey::OtelCollectorUrl => env::var(ConfigEnvKey::OtelCollectorUrl.as_str())
+                .unwrap_or(Config::DEFAULT_OTEL_URL.to_string()),
+            ConfigEnvKey::MongoDBUri => env::var(ConfigEnvKey::MongoDBUri.as_str())
+                .unwrap_or(Config::DEFAULT_MONGO_URI.to_string()),
+            ConfigEnvKey::Authority => {
+                env::var(ConfigEnvKey::Authority.as_str()).expect("authority is provided")
             }
-            ConfigEnvKey::MongoDBUri => match env::var("MONGODB_URI") {
-                Ok(uri) => uri,
-                Err(_) => Config::DEFAULT_MONGO_URI.to_string(),
-            },
             _ => panic!("this key cannot be converted to String. {DEFAULT_PANIC_MSG}"),
         }
     }
