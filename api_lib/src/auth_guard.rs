@@ -66,15 +66,11 @@ pub async fn validate_access_token(access_token: &str) -> Result<bool, StatusCod
 
 async fn fetch_jwks(uri: &str) -> Result<JWKS, StatusCode> {
     match reqwest::get(uri).await {
-        Ok(r) => {
-            r
-                .json::<JWKS>()
-                .await
-                .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)
-        }
-        Err(_err) => {
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
+        Ok(r) => r
+            .json::<JWKS>()
+            .await
+            .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR),
+        Err(_err) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 

@@ -13,7 +13,7 @@ use mongodb::{bson::doc, Client, Collection};
 pub async fn user_login(
     Extension(client): Extension<Arc<Client>>,
     Form(user_form): Form<DtoUserLogin>,
-) -> Response {
+) -> Result<Response, StatusCode> {
     let username = user_form.username.clone();
     let password = user_form.password.clone();
 
@@ -22,28 +22,23 @@ pub async fn user_login(
     let user_collection: Collection<UserModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_USERS);
-    match user_collection
+
+    let user = user_collection
         .find_one(doc! { "username": &username }, None)
         .await
-    {
-        Ok(Some(u)) => {
-            if u.username == username && u.password == password {
-                tracing::info!(u.username, "matched user!");
-                return build_login_response(username);
-            }
-            StatusCode::NOT_FOUND.into_response()
-        }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
-        Err(err) => {
-            // An error occurred while searching the database.
-            tracing::error!("an error occurred while searching for username ({username}): {err}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    if user.username == username && user.password == password {
+        tracing::info!(user.username, "matched user!");
+        build_login_response(username)
+    } else {
+        Err(StatusCode::NOT_FOUND)
     }
 }
 
-fn build_login_response(username: String) -> Response {
-    Response::builder()
+fn build_login_response(username: String) -> Result<Response, StatusCode> {
+    Ok(Response::builder()
         .status(StatusCode::OK)
         .header(
             "Set-Cookie",
@@ -59,12 +54,12 @@ fn build_login_response(username: String) -> Response {
             ),
         )
         .body(http_body::Empty::new())
-        .unwrap()
-        .into_response()
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
+        .into_response())
 }
 
-fn build_logout_response() -> Response {
-    Response::builder()
+fn build_logout_response() -> Result<Response, StatusCode> {
+    Ok(Response::builder()
         .status(StatusCode::OK)
         .header(
             "Set-Cookie",
@@ -80,8 +75,8 @@ fn build_logout_response() -> Response {
             ),
         )
         .body(http_body::Empty::new())
-        .unwrap()
-        .into_response()
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
+        .into_response())
 }
 
 pub async fn user_logout(
@@ -91,19 +86,12 @@ pub async fn user_logout(
     let user_collection: Collection<UserModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_USERS);
-    match user_collection
+
+    user_collection
         .find_one(doc! { "username": &user.username }, None)
         .await
-    {
-        Ok(Some(_)) => Ok(build_logout_response()),
-        Ok(None) => Err(StatusCode::BAD_REQUEST),
-        Err(err) => {
-            // An error occurred while searching the database.
-            tracing::error!(
-                "an error occurred while searching for username ({}): {err}",
-                user.username
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    build_logout_response()
 }

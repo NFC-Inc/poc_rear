@@ -17,7 +17,7 @@ pub async fn suggest_new_wotd(
     Extension(dto_user): Extension<DtoUser>,
     Extension(client): Extension<std::sync::Arc<Client>>,
     Form(dto_word_suggestion): Form<DtoWotdCreate>,
-) -> Response {
+) -> Result<Response, StatusCode> {
     let queue_collection: mongodb::Collection<QueueItemWordModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_QUEUE_WORDS);
@@ -28,16 +28,17 @@ pub async fn suggest_new_wotd(
             None,
         )
         .await
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
     {
-        Ok(Some(word)) => (
+        Some(word) => Ok((
             StatusCode::BAD_REQUEST,
             format!(
                 "{} word has already been suggested, and is in the queue!",
                 word.word.word
             ),
         )
-            .into_response(),
-        Ok(None) => {
+            .into_response()),
+        None => {
             let words_collection: mongodb::Collection<WordModel> = client
                 .database(Config::MONGO_DB_NAME)
                 .collection(Config::MONGO_COLL_NAME_WORDS);
@@ -48,12 +49,13 @@ pub async fn suggest_new_wotd(
                     None,
                 )
                 .await
+                .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
             {
-                Ok(Some(word)) => {
+                Some(word) => {
                     tracing::info!("found existing word!");
                     word
                 }
-                Ok(None) => {
+                None => {
                     let new_word = WordModel {
                         _id: ObjectId::new(),
                         created_by_id: dto_user._id,
@@ -67,12 +69,11 @@ pub async fn suggest_new_wotd(
                     tracing::info!("creating new word!");
 
                     if let Err(_err) = words_collection.insert_one(new_word.clone(), None).await {
-                        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+                        return Err(StatusCode::INTERNAL_SERVER_ERROR);
                     }
 
                     new_word
                 }
-                Err(_err) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
             };
 
             let suggestion = QueueItemWordModel {
@@ -81,19 +82,20 @@ pub async fn suggest_new_wotd(
                 word: suggested_word,
             };
 
-            match queue_collection.insert_one(suggestion, None).await {
-                Ok(_) => (StatusCode::OK, "wotd added!".to_string()).into_response(),
-                Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response(),
-            }
+            queue_collection
+                .insert_one(suggestion, None)
+                .await
+                .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+            return Ok((StatusCode::OK, "wotd added!".to_string()).into_response());
         }
-        Err(_err) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
 
 pub async fn get_wotd(
     Extension(_user): Extension<DtoUser>,
     Extension(client): Extension<std::sync::Arc<Client>>,
-) -> Response {
+) -> Result<Response, StatusCode> {
     let collection: mongodb::Collection<QueueItemWordModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_QUEUE_WORDS);
@@ -103,16 +105,16 @@ pub async fn get_wotd(
         .build();
 
     match collection.find_one(mongodb::bson::doc! {}, options).await {
-        Ok(Some(wotd)) => (StatusCode::OK, Json(Some(wotd))).into_response(),
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
-        Err(_err) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Ok(Some(wotd)) => Ok((StatusCode::OK, Json(Some(wotd))).into_response()),
+        Ok(None) => Err(StatusCode::NOT_FOUND),
+        Err(_err) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 
 pub async fn update_wotd(
     Extension(_user): Extension<DtoUser>,
     Extension(client): Extension<std::sync::Arc<Client>>,
-) -> Response {
+) -> Result<Response, StatusCode> {
     let collection: mongodb::Collection<QueueItemWordModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_QUEUE_WORDS);
@@ -121,83 +123,70 @@ pub async fn update_wotd(
         .sort(mongodb::bson::doc! {"added_at": 1})
         .build();
 
-    match collection.find_one(mongodb::bson::doc! {}, options).await {
-        Ok(Some(wotd)) => {
-            // Delete the document
-            match collection
-                .delete_one(mongodb::bson::doc! {"_id": wotd._id}, None)
-                .await
-            {
-                Ok(deleted) => {
-                    println!("Deleted {} document(s).", deleted.deleted_count);
-                    (StatusCode::OK, Json(Some(wotd))).into_response()
-                }
-                Err(_) => StatusCode::NOT_FOUND.into_response(),
-            }
-        }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
-        Err(_err) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-    }
+    let wotd = collection
+        .find_one(mongodb::bson::doc! {}, options)
+        .await
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    // Delete the document
+    let deleted = collection
+        .delete_one(mongodb::bson::doc! {"_id": wotd._id}, None)
+        .await
+        .map_err(|_err| StatusCode::NOT_FOUND)?;
+
+    tracing::debug!("Deleted {} document(s).", deleted.deleted_count);
+    Ok((StatusCode::OK, Json(Some(wotd))).into_response())
 }
 
 pub async fn get_word(
     Extension(_user): Extension<DtoUser>,
     Extension(client): Extension<std::sync::Arc<Client>>,
     word: Path<String>,
-) -> Response {
+) -> Result<Response, StatusCode> {
     let collection: mongodb::Collection<WordModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_WORDS);
     let word_name = word.to_string();
 
-    match collection
+    let wotd = collection
         .find_one(mongodb::bson::doc! { "word": &word_name }, None)
         .await
-    {
-        Ok(Some(wotd)) => (StatusCode::OK, Json(Some(wotd))).into_response(),
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
-        Err(err) => {
-            tracing::error!(
-                "server errored when trying to find: {}, {err}",
-                word_name.to_string()
-            );
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
-    }
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    Ok((StatusCode::OK, Json(Some(wotd))).into_response())
 }
 
 pub async fn get_words(
     Extension(_user): Extension<DtoUser>,
     Extension(client): Extension<std::sync::Arc<Client>>,
-) -> Response {
+) -> Result<Response, StatusCode> {
     let collection: mongodb::Collection<WordModel> = client
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_WORDS);
-    match collection.find(None, None).await {
-        Ok(mut cursor_wotd) => {
-            let mut wotds = Vec::new();
-            while let Some(wotd) = cursor_wotd.next().await {
-                match wotd {
-                    Ok(w) => wotds.push(w),
-                    Err(err) => {
-                        tracing::warn!("error occured during mongo cursor iteration: {err}")
-                    }
-                }
+    let mut cursor_wotd = collection
+        .find(None, None)
+        .await
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let mut wotds = Vec::new();
+    while let Some(wotd) = cursor_wotd.next().await {
+        match wotd {
+            Ok(w) => wotds.push(w),
+            Err(err) => {
+                tracing::warn!("error occured during mongo cursor iteration: {err}")
             }
-            (StatusCode::OK, Json(wotds)).into_response()
-        }
-        Err(err) => {
-            tracing::error!("server errored when trying to find wotds: {err}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
+    Ok((StatusCode::OK, Json(wotds)).into_response())
 }
 
 pub async fn create_word(
     Extension(dto_user): Extension<DtoUser>,
     Extension(client): Extension<std::sync::Arc<Client>>,
     Form(create_word_dto): Form<DtoWotdCreate>,
-) -> (StatusCode, String) {
+) -> Result<Response, StatusCode> {
     let create_word = create_word_dto;
 
     let wotd = WordModel {
@@ -214,10 +203,10 @@ pub async fn create_word(
         .database(Config::MONGO_DB_NAME)
         .collection(Config::MONGO_COLL_NAME_WORDS);
 
-    let result = collection.insert_one(wotd, None).await;
+    let _result = collection
+        .insert_one(wotd, None)
+        .await
+        .map_err(|_err| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    match result {
-        Ok(_) => (StatusCode::OK, "wotd added!".to_string()),
-        Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()),
-    }
+    Ok((StatusCode::OK, "wotd added!".to_string()).into_response())
 }
